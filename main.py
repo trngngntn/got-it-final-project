@@ -6,8 +6,12 @@ from main.schemas.exceptions import ErrorSchema
 
 
 class TestErr(BadRequest):
-    def __init__(self):
-        self.error_data = {"key": "value"}
+    error_code = 2324
+    error_data = {"key": "value"}
+
+    # def __init__(self):
+    #     # self.error_data = {"key": "value"}
+    #     pass
 
     def js(self):
         return ErrorSchema().dumps(self)
