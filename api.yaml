@@ -1,0 +1,678 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: API
+  description: Final project API design
+servers:
+  - description: Local server
+    url: https://localhost:5000/
+tags:
+  - name: user
+    description: Operations on user
+  - name: category
+    description: Operations on category
+  - name: item
+    description: Operations on item
+paths:
+  /register:
+    post:
+      tags:
+        - user
+      summary: Register a new user
+      requestBody:
+        description: E-mail and password
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCredential'
+      responses:
+        '201':
+          description: New user created & logged in.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - access_token
+                properties:
+                  access_token:
+                    $ref: '#/components/schemas/access_token'
+        '400':
+          description: |
+            - Invalid e-mail/password
+            - Malformed request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              examples:
+                validation_errors:
+                  summary: Invalid e-mail/password
+                  value:
+                    error_code: 400001
+                    error_message: Validation error.
+                    error_data:
+                      email: ...
+                      password: ...
+                malformed_request:
+                  $ref: '#/components/examples/bad_request'
+        '409':
+          description: A user with the same email is already existed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              examples:
+                duplicated_email:
+                  summary: Duplicated e-mail
+                  value:
+                    error_code: 409001
+                    error_message: An user with the same e-mail is already existed.
+  /login:
+    post:
+      tags:
+        - user
+      summary: Authenticate a user
+      requestBody:
+        description: E-mail and password
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCredential'
+      responses:
+        '200':
+          description: User logged in
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - access_token
+                properties:
+                  access_token:
+                    $ref: '#/components/schemas/access_token'
+        '400':
+          $ref: '#/components/responses/malformed_request'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              examples:
+                invalid_credentials:
+                  summary: Invalid credentials
+                  value:
+                    error_code: 401000
+                    error_message: Unauthorized.
+  /categories:
+    get:
+      tags:
+        - category
+      summary: Retrieve a list of all categories
+      parameters:
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: The list of all categories
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - items_per_page
+                  - page
+                  - total_items
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Category'
+                  items_per_page:
+                    type: integer
+                    default: 20
+                  page:
+                    type: integer
+                  total_items:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/malformed_request'
+    post:
+      tags:
+        - category
+      summary: Create a new category
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Category's details
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlainCategory'
+      responses:
+        '201':
+          description: A new cateogry is created
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: |
+            - Invalid name
+            - Malformed request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              examples:
+                validation_error:
+                  summary: Invalid name
+                  value:
+                    error_code: 400001
+                    error_message: Validation error.
+                    error_data:
+                      name: ...
+                malformed_request:
+                  $ref: '#/components/examples/bad_request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '409':
+          description: A category with the same name is already existed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              examples:
+                duplicated_email:
+                  summary: Duplicated name
+                  value:
+                    error_code: 409002
+                    error_message: A category with the same name is already existed.
+  /categories/{category_id}:
+    parameters:
+      - $ref: '#/components/parameters/category_id'
+    get:
+      tags:
+        - category
+      summary: Retrieve a category
+      responses:
+        '200':
+          description: Retrieved category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/malformed_request'
+        '404':
+          $ref: '#/components/responses/category_not_found'
+    put:
+      tags:
+        - category
+      summary: Update a category
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Category's details
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OptionalPlainCategory'
+      responses:
+        '200':
+          description: Category is updated
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/malformed_request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          description: Can not edit category created by other user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              examples:
+                unauthorized:
+                  $ref: '#/components/examples/forbidden'
+        '404':
+          $ref: '#/components/responses/category_not_found'
+    delete:
+      tags:
+        - category
+      summary: Delete a category
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Category is deleted
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/malformed_request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          description: Can not delete category created by other user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              examples:
+                unauthorized:
+                  $ref: '#/components/examples/forbidden'
+        '404':
+          $ref: '#/components/responses/category_not_found'
+  /categories/{category_id}/items:
+    parameters:
+      - $ref: '#/components/parameters/category_id'
+    get:
+      tags:
+        - item
+      summary: Retrieve a list of items belong to a category
+      parameters:
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: The list of retrieved items
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - items_per_page
+                  - page
+                  - total_items
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Item'
+                  items_per_page:
+                    type: integer
+                    default: 20
+                  page:
+                    type: integer
+                  total_items:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/malformed_request'
+        '404':
+          $ref: '#/components/responses/category_not_found'
+    post:
+      tags:
+        - item
+      summary: Create a new item in a category
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: The details of item to create.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlainItem'
+      responses:
+        '201':
+          description: A new item is created
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: |
+            - Invalid name/description
+            - Malformed request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              examples:
+                validation_error:
+                  summary: Invalid name/description
+                  value:
+                    error_code: 400001
+                    error_message: Validation error.
+                    error_data:
+                      name: ...
+                      description: ...
+                malformed_request:
+                  $ref: '#/components/examples/bad_request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/category_not_found'
+        '409':
+          description: An item with the same name is already existed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              examples:
+                duplicated_email:
+                  summary: Duplicated name
+                  value:
+                    error_code: 409003
+                    error_message: An item with the same name is already existed.
+  /categories/{category_id}/items/{item_id}:
+    parameters:
+      - $ref: '#/components/parameters/category_id'
+      - $ref: '#/components/parameters/item_id'
+    get:
+      tags:
+        - item
+      summary: Retrieve details about an item
+      responses:
+        '200':
+          description: The requested item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '400':
+          $ref: '#/components/responses/malformed_request'
+        '404':
+          $ref: '#/components/responses/item_not_found'
+    put:
+      tags:
+        - item
+      summary: Update an item
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OptionalPlainItem'
+      responses:
+        '200':
+          description: The item is updated
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/malformed_request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          description: Can not edit item created by other user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              examples:
+                unauthorized:
+                  $ref: '#/components/examples/forbidden'
+        '404':
+          $ref: '#/components/responses/item_not_found'
+        '409':
+          description: An item with the same name is already existed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              examples:
+                duplicated_email:
+                  summary: Duplicated name
+                  value:
+                    error_code: 409003
+                    error_message: An item with the same name is already existed.
+    delete:
+      tags:
+        - item
+      summary: Delete an item
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The item is deleted
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/malformed_request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          description: Can not delete item created by other user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              examples:
+                unauthorized:
+                  $ref: '#/components/examples/forbidden'
+        '404':
+          $ref: '#/components/responses/item_not_found'
+components:
+  schemas:
+    user_id:
+      description: The unique identifier of a user
+      type: integer
+    category_id:
+      description: The unique identifier of a category
+      type: integer
+    item_id:
+      description: The unique identifier of an item
+      type: integer
+    access_token:
+      description: User's access token
+      type: string
+      default: '{JWT}'
+    UserCredential:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          description: User's e-mail
+          type: string
+        password:
+          description: User's password
+          type: string
+    OptionalPlainCategory:
+      type: object
+      properties:
+        name:
+          type: string
+    PlainCategory:
+      description: Plain category object
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Name of the category
+    Category:
+      description: Category object
+      allOf:
+        - type: object
+          required:
+            - id
+            - user_id
+          properties:
+            id:
+              $ref: '#/components/schemas/category_id'
+            user_id:
+              $ref: '#/components/schemas/user_id'
+        - $ref: '#/components/schemas/PlainCategory'
+    OptionalPlainItem:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+    PlainItem:
+      description: Plain item object
+      type: object
+      required:
+        - name
+        - description
+      properties:
+        name:
+          type: string
+          description: Name of the item
+        description:
+          type: string
+          description: Item's description
+    Item:
+      description: Item object
+      allOf:
+        - type: object
+          required:
+            - id
+            - user_id
+          properties:
+            id:
+              $ref: '#/components/schemas/item_id'
+            user_id:
+              $ref: '#/components/schemas/user_id'
+        - $ref: '#/components/schemas/PlainItem'
+    ErrorMessage:
+      type: object
+      required:
+        - error_code
+        - error_message
+      properties:
+        error_code:
+          type: integer
+        error_message:
+          type: string
+        error_data:
+          type: object
+          nullable: true
+          default: null
+  examples:
+    bad_request:
+      summary: Malformed request
+      value:
+        error_code: 400000
+        error_message: Bad request.
+    validation_error:
+      summary: Vaidation error
+      value:
+        error_code: 400001
+        error_message: Validation error
+    unauthorized:
+      summary: Unauthorized
+      value:
+        error_code: 401000
+        error_message: Unauthorized.
+    forbidden:
+      summary: Forbidden
+      value:
+        error_code: 403000
+        error_message: Forbidden.
+    not_found:
+      summary: Not found
+      value:
+        error_code: 404000
+        error_message: Not found.
+    internal_server_error:
+      summary: Internal server error
+      value:
+        error_code: 500000
+        error_message: Internal server error
+  parameters:
+    page:
+      name: page
+      description: Index for pagination
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    category_id:
+      name: category_id
+      in: path
+      description: The unique identifier of a category
+      required: true
+      schema:
+        $ref: '#/components/schemas/category_id'
+    item_id:
+      name: item_id
+      in: path
+      description: The unique identifier of an item
+      required: true
+      schema:
+        $ref: '#/components/schemas/item_id'
+  responses:
+    item_not_found:
+      description: >-
+        The category with the correspond `category_id` or the category does not 
+        contains an item with the correspond `item_id`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessage'
+          examples:
+            not_found:
+              $ref: '#/components/examples/not_found'
+    category_not_found:
+      description: The category with the correspond `category_id` is not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessage'
+          examples:
+            not_found:
+              $ref: '#/components/examples/not_found'
+    not_found:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessage'
+          examples:
+            not_found:
+              summary: Not found
+              value:
+                error_code: 404000
+                error_message: Not found.
+    malformed_request:
+      description: Malformed request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessage'
+          examples:
+            not_found:
+              $ref: '#/components/examples/bad_request'
+    unauthorized:
+      description: Access token is missing or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessage'
+          examples:
+            unauthorized:
+              $ref: '#/components/examples/unauthorized'
+    internal_server_error:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessage'
+          examples:
+            internal_server_error:
+              $ref: '#/components/examples/internal_server_error'
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
