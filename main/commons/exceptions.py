@@ -11,6 +11,7 @@ class StatusCode:
     FORBIDDEN = 403
     NOT_FOUND = 404
     METHOD_NOT_ALLOWED = 405
+    CONFLICT = 409
     INTERNAL_SERVER_ERROR = 500
 
 
@@ -21,6 +22,10 @@ class _ErrorCode:
     FORBIDDEN = 403000
     NOT_FOUND = 404000
     METHOD_NOT_ALLOWED = 405000
+    CONFLICT = 409000
+    DUPLICATED_USER_EMAIL = 409001
+    DUPLICATED_CATEGORY_NAME = 409002
+    DUPLICATED_ITEM_NAME = 409003
     INTERNAL_SERVER_ERROR = 500000
 
 
@@ -31,6 +36,10 @@ class _ErrorMessage:
     FORBIDDEN = "Forbidden."
     NOT_FOUND = "Not found."
     METHOD_NOT_ALLOWED = "Method not allowed."
+    CONFLICT = "Conflict."
+    DUPLICATED_USER_EMAIL = "An user with the same e-mail is already existed."
+    DUPLICATED_CATEGORY_NAME = "A category with the same name is already existed."
+    DUPLICATED_ITEM_NAME = "An item with the same name is already existed."
     INTERNAL_SERVER_ERROR = "Internal server error."
 
 
@@ -108,3 +117,24 @@ class InternalServerError(BaseError):
     status_code = StatusCode.INTERNAL_SERVER_ERROR
     error_message = _ErrorMessage.INTERNAL_SERVER_ERROR
     error_code = _ErrorCode.INTERNAL_SERVER_ERROR
+
+
+class ConflictError(BaseError):
+    status_code = StatusCode.CONFLICT
+    error_message = _ErrorMessage.CONFLICT
+    error_code = _ErrorCode.CONFLICT
+
+
+class DuplicatedEmailError(ConflictError):
+    error_message = _ErrorMessage.DUPLICATED_USER_EMAIL
+    error_code = _ErrorCode.DUPLICATED_USER_EMAIL
+
+
+class DuplicatedCategoryNameError(ConflictError):
+    error_message = _ErrorMessage.DUPLICATED_CATEGORY_NAME
+    error_code = _ErrorCode.DUPLICATED_CATEGORY_NAME
+
+
+class DuplicatedItemNameError(ConflictError):
+    error_message = _ErrorMessage.DUPLICATED_ITEM_NAME
+    error_code = _ErrorCode.DUPLICATED_ITEM_NAME

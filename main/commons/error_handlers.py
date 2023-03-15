@@ -1,13 +1,23 @@
+from marshmallow import exceptions as mm_exceptions
+from werkzeug import exceptions
+
 from .exceptions import (
+    BadRequest,
     BaseError,
     InternalServerError,
     MethodNotAllowed,
     NotFound,
     StatusCode,
+    Unauthorized,
+    ValidationError,
 )
 
 
 def register_error_handlers(app):
+    @app.errorhandler(401)
+    def unauthorized(_):
+        return Unauthorized().to_response()
+
     @app.errorhandler(404)
     def not_found(_):
         return NotFound().to_response()
@@ -48,3 +58,11 @@ def register_error_handlers(app):
         logger.exception(message=str(e))
 
         return InternalServerError(error_message=str(e)).to_response()
+
+    @app.errorhandler(exceptions.BadRequest)
+    def handle_bad_request(_):
+        return BadRequest().to_response()
+
+    @app.errorhandler(mm_exceptions.ValidationError)
+    def handle_validation_error(e):
+        return ValidationError(error_data=str(e)).to_response()
