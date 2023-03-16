@@ -1,8 +1,9 @@
 import os
 from hashlib import pbkdf2_hmac
 
-from flask import abort, request
+from flask import abort, make_response, request
 
+import main.commons.http_status as HTTPStatus
 from main import app, db
 from main.commons import params
 from main.commons.exceptions import DuplicatedEmailError
@@ -24,40 +25,38 @@ def hash_password(password: str, salt: str) -> str:
 
 @app.post("/register")
 def register():
-    user_credentials = UserSchema().loads(request.get_data())
+    data = UserSchema().loads(request.get_data())
 
-    if UserModel.query.filter(UserModel.email == user_credentials["email"]).first():
+    if UserModel.query_by_email(data["email"]):
         raise DuplicatedEmailError()
 
     salt = generate_salt()
     user = UserModel(
-        email=user_credentials["email"],
+        email=data["email"],
         salt=salt,
-        password=hash_password(user_credentials["password"], salt),
+        password=hash_password(data["password"], salt),
     )
     db.session.add(user)
     db.session.commit()
-    ServiceLogger("user_controller").info(
-        message=f"New user registered (id={user.id})."
-    )
-    jws = jwt.create_access_token(user)
-    return {"access_token": jws}
+    ServiceLogger(__name__).info(message=f"New user registered (id={user.id}).")
+    token = jwt.create_access_token(user)
+    return make_response({"access_token": token}, HTTPStatus.CREATED)
 
 
 @app.post("/login")
 def login():
-    user_credentials = UserSchema().loads(request.get_data())
-    user = UserModel.query.filter(UserModel.email == user_credentials["email"]).first()
+    data = UserSchema().loads(request.get_data())
+    user = UserModel.query_by_email(data["email"])
 
-    if user and user.password == hash_password(user_credentials["password"], user.salt):
-        ServiceLogger("user_controller").info(message=f"User(id={user.id}) logged in.")
-        jws = jwt.create_access_token(user)
-        return {"access_token": jws}
+    if user and user.password == hash_password(data["password"], user.salt):
+        ServiceLogger(__name__).info(message=f"User(id={user.id}) logged in.")
+        token = jwt.create_access_token(user)
+        return make_response({"access_token": token}, HTTPStatus.OK)
 
     abort(401)
 
 
-@app.get("/dump")
-@jwt.protect
-def dump_jwt(jwt):
-    return jwt
+# @app.get("/dump")
+# @jwt.protect
+# def dump_jwt(jwt):
+#     return jwt

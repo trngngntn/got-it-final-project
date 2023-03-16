@@ -13,7 +13,7 @@ class UserSchema(BaseSchema):
         load_only=True,
         validate=validate.Regexp(
             params.PATTERN_PWD,
-            error="Passwords must have at least 6 characters, including\
-            at least one lowercase letter, one uppercase letter, one digit.",
+            error="Passwords must have at least 6 characters, including \
+at least one lowercase letter, one uppercase letter, one digit.",
         ),
     )

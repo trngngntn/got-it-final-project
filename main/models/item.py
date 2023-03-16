@@ -20,3 +20,7 @@ class ItemModel(db.Model):
     modified = db.Column(
         db.DateTime(), default=default_date_now, onupdate=default_date_now
     )
+
+    @classmethod
+    def query_by_name(cls, name: str):
+        return cls.query.filter(cls.name == name).first()

@@ -12,9 +12,13 @@ class CategoryModel(db.Model):
         db.Integer(), db.ForeignKey("users.id"), unique=False, nullable=False
     )
     items = db.relationship(
-        "ItemModel", back_populates="store", lazy="dynamic", cascade="all, delete"
+        "ItemModel", back_populates="category", lazy="dynamic", cascade="all, delete"
     )
     created = db.Column(db.DateTime(), default=default_date_now)
     modified = db.Column(
         db.DateTime(), default=default_date_now, onupdate=default_date_now
     )
+
+    @classmethod
+    def query_by_name(cls, name: str):
+        return cls.query.filter(cls.name == name).first()
