@@ -33,7 +33,7 @@ def test_get_all_categories(client, create_categories, response_not_found):
 
 
 # POST /categories
-# 200
+# 201
 def test_create_category(client, login_users):
     response = client.post(
         "/categories",
@@ -112,7 +112,7 @@ def test_get_category(create_categories, client):
 
 
 # 404
-def test_get_category_with_invalid_id(client, response_not_found):
+def test_get_category_with_invalid_id(client, create_categories, response_not_found):
     response = client.get("/categories/99999")
     assert response.status_code == 404
     assert response.json == response_not_found
@@ -133,6 +133,9 @@ def test_update_category(client, login_users, create_categories):
     )
     assert response.status_code == 200
     assert response.json == {}
+    updated = CategoryModel.query.filter(CategoryModel.name == "new name").first()
+    assert updated
+    assert updated.id == create_categories[0].id
 
 
 # 400
@@ -157,7 +160,7 @@ def test_update_category_with_malformed_request(
 def test_update_category_without_auth(client, create_categories, response_unauthorized):
     response = client.put(
         f"/categories/{create_categories[0].id}",
-        data="{{}",
+        json={"name": "new name"},
     )
     assert response.status_code == 401
     assert response.json == response_unauthorized
@@ -183,6 +186,7 @@ def test_update_category_of_other_user(
 def test_update_category_with_invalid_id(
     client,
     login_users,
+    create_categories,
     response_not_found,
 ):
     response = client.put(
@@ -265,6 +269,7 @@ def test_delete_category_of_other_user(
 def test_delete_category_with_invalid_id(
     client,
     login_users,
+    create_categories,
     response_not_found,
 ):
     response = client.delete(
