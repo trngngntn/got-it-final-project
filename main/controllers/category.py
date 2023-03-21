@@ -1,33 +1,31 @@
-from flask import abort, make_response, request
+from flask import make_response
 
-from main import app, db
+from main import app, config, db
 from main.commons import http_status as HTTPStatus
-from main.commons import params
-from main.commons.decorators import paginate, require_token
-from main.commons.exceptions import DuplicatedCategoryNameError
+from main.commons.decorators import require_token, response_schema
+from main.commons.exceptions import DuplicatedCategoryNameError, Forbidden
 from main.models.category import CategoryModel
-from main.schemas.base import make_pagination_schema
-from main.schemas.category import CategorySchema
+from main.schemas.base import ParamPageSchema
+from main.schemas.category import CategoryListSchema, CategorySchema
 
 
 @app.get("/categories")
-@paginate
+@response_schema(ParamPageSchema)
 def get_all_categories(page):
     categories = CategoryModel.query.paginate(
-        page=page, max_per_page=params.PAGINATE_MAX_ITEMS, error_out=True, count=True
+        page=page, max_per_page=config.PAGINATION_MAX_ITEMS, error_out=True, count=True
     )
-    data = make_pagination_schema(CategorySchema).jsonify(categories)
-    return make_response(data)
+    return CategoryListSchema().jsonify(categories)
 
 
 @app.post("/categories")
 @require_token
-def create_category(jwt):
-    data = CategorySchema().loads(request.get_data())
-    if CategoryModel.query_by_name(data["name"]):
+@response_schema(CategorySchema)
+def create_category(user, name):
+    if CategoryModel.query_by_name(name):
         raise DuplicatedCategoryNameError()
 
-    category = CategoryModel(**data, user_id=jwt.get("uid"))
+    category = CategoryModel(name=name, user_id=user.id)
     db.session.add(category)
     db.session.commit()
 
@@ -37,25 +35,23 @@ def create_category(jwt):
 @app.get("/categories/<int:category_id>")
 def get_category_by_id(category_id):
     category = CategoryModel.query.get_or_404(category_id)
-    category = CategorySchema().jsonify(category)
 
-    return make_response(category)
+    return CategorySchema().jsonify(category)
 
 
 @app.put("/categories/<int:category_id>")
 @require_token
-def update_category(category_id, jwt):
+@response_schema(CategorySchema)
+def update_category(category_id, name, user):
     category = CategoryModel.query.get_or_404(category_id)
-    if category.user_id != jwt.get("uid"):
-        abort(HTTPStatus.FORBIDDEN)
+    if category.user_id != user.id:
+        raise Forbidden()
 
-    data = CategorySchema().loads(request.get_data())
-
-    category_with_same_name = CategoryModel.query_by_name(data["name"])
-    if category_with_same_name and category_with_same_name.id == category_id:
+    category_with_same_name = CategoryModel.query_by_name(name)
+    if category_with_same_name and category_with_same_name.id != category_id:
         raise DuplicatedCategoryNameError()
 
-    category.name = data["name"]
+    category.name = name
     db.session.commit()
 
     return make_response({})
@@ -63,11 +59,11 @@ def update_category(category_id, jwt):
 
 @app.delete("/categories/<int:category_id>")
 @require_token
-def delete_category(category_id, jwt):
+def delete_category(category_id, user):
     category = CategoryModel.query.get_or_404(category_id)
 
-    if category.user_id != jwt.get("uid"):
-        abort(HTTPStatus.FORBIDDEN)
+    if category.user_id != user.id:
+        raise Forbidden()
 
     db.session.delete(category)
     db.session.commit()

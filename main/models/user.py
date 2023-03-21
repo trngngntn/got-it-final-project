@@ -1,6 +1,6 @@
-from main import db
+from datetime import datetime
 
-from . import default_date_now
+from main import db
 
 
 class UserModel(db.Model):
@@ -10,10 +10,8 @@ class UserModel(db.Model):
     email = db.Column(db.String(254), unique=True, nullable=False)
     password = db.Column(db.String(64), nullable=False)
     salt = db.Column(db.String(16), nullable=False)
-    created = db.Column(db.DateTime(), default=default_date_now)
-    modified = db.Column(
-        db.DateTime(), default=default_date_now, onupdate=default_date_now
-    )
+    created = db.Column(db.DateTime(), default=datetime.now)
+    modified = db.Column(db.DateTime(), default=datetime.now, onupdate=datetime.now)
 
     @classmethod
     def query_by_email(cls, email: str):

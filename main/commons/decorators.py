@@ -1,12 +1,15 @@
 from functools import wraps
 
-from flask import abort, request
+from flask import request
 from jwt.exceptions import InvalidTokenError
 
-from main.commons import http_status as HTTPStatus
+from main import db
 from main.commons.exceptions import Unauthorized
-from main.libs.jwt import extract_jwt, verify_access_token
+from main.libs.jwt import extract_jwt_from_header, verify_access_token
 from main.libs.log import ServiceLogger
+from main.models.user import UserModel
+
+logger = ServiceLogger(__name__)
 
 
 def require_token(func):
@@ -16,41 +19,30 @@ def require_token(func):
         if not auth_header:
             raise Unauthorized()
         try:
-            jwt_str = extract_jwt(auth_header)
+            jwt_str = extract_jwt_from_header(auth_header)
             jwt_payload = verify_access_token(jwt_str)
-            return func(*args, **kwargs, jwt=jwt_payload)
+            user = db.session.get(UserModel, jwt_payload["sub"])
+            if user is None:
+                raise Unauthorized()
+            return func(*args, **kwargs, user=user)
         except InvalidTokenError:
-            ServiceLogger(__name__).warning(message="Invalid token.")
-            abort(HTTPStatus.UNAUTHORIZED)
+            logger.warning(message="Invalid token.")
+            raise Unauthorized()
 
     return wrapped_func
 
 
-def paginate(func):
-    @wraps(func)
-    def wrapped_func(*args, **kwargs):
-        try:
-            page = request.args.get("page")
-            if page is None:
-                page = 1
-            else:
-                page = int(request.args.get("page"))
-                if page < 1:
-                    abort(HTTPStatus.NOT_FOUND)
-        except ValueError:
-            abort(HTTPStatus.BAD_REQUEST)
-        return func(*args, **kwargs, page=page)
+def response_schema(schema):
+    def wrapped_func(func):
+        @wraps(func)
+        def load_data(*args, **kwargs):
+            data: dict = {}
+            if request.method == "GET":
+                data: dict = schema().load(request.args)
+            if request.method in ["POST", "PUT"]:
+                data: dict = schema().load(request.get_json())
+            return func(*args, **kwargs, **data)
+
+        return load_data
 
     return wrapped_func
-
-
-# def validate_path_variables(var_name, var_type):
-#     def wrapped_func(func):
-#         @wraps(func)
-#         def validate_vars(*args, **kwargs):
-#             ServiceLogger(__name__).info(message=f"var={var_name}")
-#             if kwargs.get(var_name) is not var_type:
-#                 abort(HTTPStatus.BAD_REQUEST)
-#             return func(*args, **kwargs)
-#         return validate_vars
-#     return wrapped_func

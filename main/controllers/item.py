@@ -1,35 +1,33 @@
-from flask import abort, make_response, request
+from flask import make_response
 
-from main import app, db
+from main import app, config, db
 from main.commons import http_status as HTTPStatus
-from main.commons import params
-from main.commons.decorators import paginate, require_token
-from main.commons.exceptions import DuplicatedItemNameError
+from main.commons.decorators import require_token, response_schema
+from main.commons.exceptions import DuplicatedItemNameError, Forbidden
 from main.models.category import CategoryModel
 from main.models.item import ItemModel
-from main.schemas.base import make_pagination_schema
-from main.schemas.item import ItemSchema, ItemUpdateSchema
+from main.schemas.base import ParamPageSchema
+from main.schemas.item import ItemListSchema, ItemSchema, ItemUpdateSchema
 
 
 @app.get("/categories/<int:category_id>/items")
-@paginate
-def get_all_item_by_category(category_id, page):
+@response_schema(ParamPageSchema)
+def get_all_items_by_category(category_id, page):
     category = CategoryModel.query.get_or_404(category_id)
     items = category.items.paginate(
-        page=page, max_per_page=params.PAGINATE_MAX_ITEMS, error_out=True, count=True
+        page=page, max_per_page=config.PAGINATION_MAX_ITEMS, error_out=True, count=True
     )
-    data = make_pagination_schema(ItemSchema).jsonify(items)
-    return make_response(data)
+    return ItemListSchema().jsonify(items)
 
 
 @app.post("/categories/<int:category_id>/items")
 @require_token
-def create_item(category_id, jwt):
-    data = ItemSchema().loads(request.get_data())
-    if ItemModel.query_by_name(data["name"]):
+@response_schema(ItemSchema)
+def create_item(category_id, user, **kwargs):
+    if ItemModel.query_by_name(kwargs["name"]):
         raise DuplicatedItemNameError()
 
-    item = ItemModel(**data, user_id=jwt.get("uid"), category_id=category_id)
+    item = ItemModel(**kwargs, user_id=user.id, category_id=category_id)
     db.session.add(item)
     db.session.commit()
 
@@ -39,33 +37,32 @@ def create_item(category_id, jwt):
 @app.get("/categories/<int:category_id>/items/<int:item_id>")
 def get_item_by_id(category_id, item_id):
     item = ItemModel.query.filter(
-        ItemModel.category_id == category_id, ItemModel.id == item_id
+        ItemModel.category_id == category_id,
+        ItemModel.id == item_id,
     ).first_or_404()
-    item = ItemSchema().jsonify(item)
-    return make_response(item)
+    return ItemSchema().jsonify(item)
 
 
 @app.put("/categories/<int:category_id>/items/<int:item_id>")
 @require_token
-def update_item(category_id, item_id, jwt):
+@response_schema(ItemUpdateSchema)
+def update_item(category_id, item_id, user, **kwargs):
     item = ItemModel.query.filter(
         ItemModel.category_id == category_id, ItemModel.id == item_id
     ).first_or_404()
 
-    if item.user_id != jwt.get("uid"):
-        abort(HTTPStatus.FORBIDDEN)
+    if item.user_id != user.id:
+        raise Forbidden()
 
-    item_data = ItemUpdateSchema().loads(request.get_data())
-
-    if item_data.get("name"):
-        item_with_same_name = ItemModel.query_by_name(item_data["name"])
+    if kwargs.get("name"):
+        item_with_same_name = ItemModel.query_by_name(kwargs["name"])
         if item_with_same_name and item_with_same_name.id != item_id:
             raise DuplicatedItemNameError()
 
-        item.name = item_data["name"]
+        item.name = kwargs["name"]
 
-    if item_data.get("description"):
-        item.description = item_data["description"]
+    if kwargs.get("description"):
+        item.description = kwargs["description"]
 
     db.session.commit()
 
@@ -74,13 +71,13 @@ def update_item(category_id, item_id, jwt):
 
 @app.delete("/categories/<int:category_id>/items/<int:item_id>")
 @require_token
-def delete_item(category_id, item_id, jwt):
+def delete_item(category_id, item_id, user):
     item = ItemModel.query.filter(
         ItemModel.category_id == category_id, ItemModel.id == item_id
     ).first_or_404()
 
-    if item.user_id != jwt.get("uid"):
-        abort(HTTPStatus.FORBIDDEN)
+    if item.user_id != user.id:
+        raise Forbidden()
 
     db.session.delete(item)
     db.session.commit()

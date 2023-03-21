@@ -1,6 +1,6 @@
-from main import db
+from datetime import datetime
 
-from . import default_date_now
+from main import db
 
 
 class CategoryModel(db.Model):
@@ -14,10 +14,8 @@ class CategoryModel(db.Model):
     items = db.relationship(
         "ItemModel", back_populates="category", lazy="dynamic", cascade="all, delete"
     )
-    created = db.Column(db.DateTime(), default=default_date_now)
-    modified = db.Column(
-        db.DateTime(), default=default_date_now, onupdate=default_date_now
-    )
+    created = db.Column(db.DateTime(), default=datetime.now)
+    modified = db.Column(db.DateTime(), default=datetime.now, onupdate=datetime.now)
 
     @classmethod
     def query_by_name(cls, name: str):

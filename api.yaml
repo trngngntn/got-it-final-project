@@ -243,6 +243,18 @@ paths:
                   $ref: '#/components/examples/forbidden'
         '404':
           $ref: '#/components/responses/category_not_found'
+        '409':
+          description: A category with the same name is already existed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              examples:
+                duplicated_email:
+                  summary: Duplicated name
+                  value:
+                    error_code: 409002
+                    error_message: A category with the same name is already existed.
     delete:
       tags:
         - category

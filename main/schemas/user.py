@@ -1,6 +1,6 @@
 from marshmallow import fields, validate
 
-from main.commons import params
+from main import config
 
 from .base import BaseSchema
 
@@ -12,8 +12,8 @@ class UserSchema(BaseSchema):
         required=True,
         load_only=True,
         validate=validate.Regexp(
-            params.PATTERN_PWD,
-            error="Passwords must have at least 6 characters, including \
-at least one lowercase letter, one uppercase letter, one digit.",
+            config.PATTERN_PWD,
+            error="Passwords must have at least 6 characters, including "
+            "at least one lowercase letter, one uppercase letter, one digit.",
         ),
     )

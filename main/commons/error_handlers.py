@@ -1,7 +1,7 @@
 import json
 
 import jwt
-from marshmallow import exceptions as mm_exceptions
+from marshmallow import exceptions as marshmallow_exceptions
 from werkzeug import exceptions
 
 from main.libs.log import ServiceLogger
@@ -77,6 +77,6 @@ def register_error_handlers(app):
 
         return InternalServerError(error_message=str(e)).to_response()
 
-    @app.errorhandler(mm_exceptions.ValidationError)
+    @app.errorhandler(marshmallow_exceptions.ValidationError)
     def handle_validation_error(e):
-        return ValidationError(error_data=str(e)).to_response()
+        return ValidationError(error_data=e.messages_dict).to_response()
