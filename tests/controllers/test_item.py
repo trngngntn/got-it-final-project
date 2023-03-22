@@ -1,11 +1,12 @@
 from main import config
+from main.commons.exceptions import BadRequest, Forbidden, NotFound, Unauthorized
 from main.libs.jwt import verify_access_token
 from main.models.item import ItemModel
 
 
 # GET /categories/{cat_id}/items
 # 200
-def test_get_all_items(client, categories, items, response_not_found):
+def test_get_all_items(client, categories, items):
     path = f"/categories/{categories[0].id}/items"
     response = client.get(path)
     assert response.status_code == 200
@@ -32,7 +33,7 @@ def test_get_all_items(client, categories, items, response_not_found):
     response = client.get(f"{path}?page={page + 1}")
 
     assert response.status_code == 404
-    assert response.json == response_not_found
+    assert response.json == NotFound().to_dict()
 
 
 # POST /categories/{cat_id}/items
@@ -59,7 +60,6 @@ def test_create_item_with_malformed_request(
     client,
     login_users,
     categories,
-    response_bad_request,
 ):
     response = client.post(
         f"/categories/{categories[0].id}/items",
@@ -68,18 +68,18 @@ def test_create_item_with_malformed_request(
     )
 
     assert response.status_code == 400
-    assert response.json == response_bad_request
+    assert response.json == BadRequest().to_dict()
 
 
 # 401
-def test_create_item_without_auth(client, categories, response_unauthorized):
+def test_create_item_without_auth(client, categories):
     response = client.post(
         f"/categories/{categories[0].id}/items",
         json={"name": "item", "description": "an item"},
     )
 
     assert response.status_code == 401
-    assert response.json == response_unauthorized
+    assert response.json == Unauthorized().to_dict()
 
 
 # 404
@@ -87,7 +87,6 @@ def test_create_item_with_invalid_category_id(
     client,
     login_users,
     categories,
-    response_not_found,
 ):
     response = client.post(
         "/categories/99999/items",
@@ -96,7 +95,7 @@ def test_create_item_with_invalid_category_id(
     )
 
     assert response.status_code == 404
-    assert response.json == response_not_found
+    assert response.json == NotFound().to_dict()
 
 
 # 409
@@ -130,16 +129,16 @@ def test_get_item(items, client):
 
 
 # 404
-def test_get_item_with_invalid_ids(client, categories, items, response_not_found):
+def test_get_item_with_invalid_ids(client, categories, items):
     response = client.get(f"/categories/{categories[0].id}/items/99999")
 
     assert response.status_code == 404
-    assert response.json == response_not_found
+    assert response.json == NotFound().to_dict()
 
     response = client.get(f"/categories/99999/items/{items[0].id}")
 
     assert response.status_code == 404
-    assert response.json == response_not_found
+    assert response.json == NotFound().to_dict()
 
 
 # PUT /categories/{cat_id}/items/{itm_id}
@@ -178,9 +177,7 @@ def test_update_item(client, login_users, items):
 
 
 # 400/000
-def test_update_item_with_malformed_request(
-    client, login_users, items, response_bad_request
-):
+def test_update_item_with_malformed_request(client, login_users, items):
     user = items[0].user_id
 
     for i in range(0, len(login_users)):
@@ -195,22 +192,22 @@ def test_update_item_with_malformed_request(
     )
 
     assert response.status_code == 400
-    assert response.json == response_bad_request
+    assert response.json == BadRequest().to_dict()
 
 
 # 401
-def test_update_item_without_auth(client, items, response_unauthorized):
+def test_update_item_without_auth(client, items):
     response = client.put(
         f"/categories/{items[0].category_id}/items/{items[0].id}",
         json={"name": "new name", "description": "new description"},
     )
 
     assert response.status_code == 401
-    assert response.json == response_unauthorized
+    assert response.json == Unauthorized().to_dict()
 
 
 # 403
-def test_update_item_of_other_user(client, login_users, items, response_forbidden):
+def test_update_item_of_other_user(client, login_users, items):
     user = login_users[0]
     if items[0].user_id == verify_access_token(login_users[0])["sub"]:
         user = login_users[1]
@@ -222,7 +219,7 @@ def test_update_item_of_other_user(client, login_users, items, response_forbidde
     )
 
     assert response.status_code == 403
-    assert response.json == response_forbidden
+    assert response.json == Forbidden().to_dict()
 
 
 # 404
@@ -231,7 +228,6 @@ def test_update_item_with_invalid_id(
     login_users,
     categories,
     items,
-    response_not_found,
 ):
     response = client.put(
         f"/categories/99999/items/{items[0].id}",
@@ -240,7 +236,7 @@ def test_update_item_with_invalid_id(
     )
 
     assert response.status_code == 404
-    assert response.json == response_not_found
+    assert response.json == NotFound().to_dict()
 
     response = client.put(
         f"/categories/{categories[0].id}/items/99999",
@@ -249,7 +245,7 @@ def test_update_item_with_invalid_id(
     )
 
     assert response.status_code == 404
-    assert response.json == response_not_found
+    assert response.json == NotFound().to_dict()
 
 
 # 409
@@ -294,18 +290,18 @@ def test_delete_item(client, login_users, items):
 
 
 # 401
-def test_delete_item_without_auth(client, items, response_unauthorized):
+def test_delete_item_without_auth(client, items):
     response = client.delete(
         f"/categories/{items[0].category_id}/items/{items[0].id}",
         data="{{}",
     )
 
     assert response.status_code == 401
-    assert response.json == response_unauthorized
+    assert response.json == Unauthorized().to_dict()
 
 
 # 403
-def test_delete_item_of_other_user(client, login_users, items, response_forbidden):
+def test_delete_item_of_other_user(client, login_users, items):
     user = login_users[0]
 
     if items[0].user_id == verify_access_token(login_users[0])["sub"]:
@@ -317,7 +313,7 @@ def test_delete_item_of_other_user(client, login_users, items, response_forbidde
     )
 
     assert response.status_code == 403
-    assert response.json == response_forbidden
+    assert response.json == Forbidden().to_dict()
 
 
 # 404
@@ -326,7 +322,6 @@ def test_delete_item_with_invalid_id(
     login_users,
     categories,
     items,
-    response_not_found,
 ):
     response = client.delete(
         f"/categories/99999/items/{items[0].id}",
@@ -334,7 +329,7 @@ def test_delete_item_with_invalid_id(
     )
 
     assert response.status_code == 404
-    assert response.json == response_not_found
+    assert response.json == NotFound().to_dict()
 
     response = client.delete(
         f"/categories/{categories[0].id}/items/99999",
@@ -342,4 +337,4 @@ def test_delete_item_with_invalid_id(
     )
 
     assert response.status_code == 404
-    assert response.json == response_not_found
+    assert response.json == NotFound().to_dict()

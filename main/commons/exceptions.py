@@ -71,6 +71,13 @@ class BaseError(Exception):
 
         self.error_data = error_data
 
+    def to_dict(self):
+        return {
+            "error_code": self.error_code,
+            "error_data": self.error_data,
+            "error_message": self.error_message,
+        }
+
     def to_response(self):
         response = ErrorSchema().jsonify(self)
 

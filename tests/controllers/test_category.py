@@ -1,4 +1,5 @@
 from main import config
+from main.commons.exceptions import BadRequest, Forbidden, NotFound, Unauthorized
 from main.libs.jwt import verify_access_token
 from main.models.category import CategoryModel
 from main.models.item import ItemModel
@@ -6,7 +7,7 @@ from main.models.item import ItemModel
 
 # GET /categories
 # 200
-def test_get_all_categories(client, categories, response_not_found):
+def test_get_all_categories(client, categories):
     response = client.get("/categories")
     assert response.status_code == 200
 
@@ -31,7 +32,7 @@ def test_get_all_categories(client, categories, response_not_found):
     response = client.get(f"/categories?page={page + 1}")
 
     assert response.status_code == 404
-    assert response.json == response_not_found
+    assert response.json == NotFound().to_dict()
 
 
 # POST /categories
@@ -56,7 +57,6 @@ def test_create_category(client, login_users):
 def test_create_category_with_malformed_request(
     client,
     login_users,
-    response_bad_request,
 ):
     response = client.post(
         "/categories",
@@ -65,14 +65,13 @@ def test_create_category_with_malformed_request(
     )
 
     assert response.status_code == 400
-    assert response.json == response_bad_request
+    assert response.json == BadRequest().to_dict()
 
 
 # 400/001
 def test_create_category_with_long_name(
     client,
     login_users,
-    response_bad_request,
 ):
     response = client.post(
         "/categories",
@@ -85,7 +84,7 @@ def test_create_category_with_long_name(
 
 
 # 401
-def test_create_category_without_auth(client, response_unauthorized):
+def test_create_category_without_auth(client):
     response = client.post(
         "/categories",
         headers={"Authorization": "abcd"},
@@ -93,7 +92,7 @@ def test_create_category_without_auth(client, response_unauthorized):
     )
 
     assert response.status_code == 401
-    assert response.json == response_unauthorized
+    assert response.json == Unauthorized().to_dict()
 
 
 # 409
@@ -126,11 +125,11 @@ def test_get_category(categories, client):
 
 
 # 404
-def test_get_category_with_invalid_id(client, categories, response_not_found):
+def test_get_category_with_invalid_id(client, categories):
     response = client.get("/categories/99999")
 
     assert response.status_code == 404
-    assert response.json == response_not_found
+    assert response.json == NotFound().to_dict()
 
 
 # PUT /categories/{id}
@@ -158,9 +157,7 @@ def test_update_category(client, login_users, categories):
 
 
 # 400
-def test_update_category_with_malformed_request(
-    client, login_users, categories, response_bad_request
-):
+def test_update_category_with_malformed_request(client, login_users, categories):
     user = categories[0].user_id
     for i in range(0, len(login_users)):
         if verify_access_token(login_users[i])["sub"] == user:
@@ -174,24 +171,22 @@ def test_update_category_with_malformed_request(
     )
 
     assert response.status_code == 400
-    assert response.json == response_bad_request
+    assert response.json == BadRequest().to_dict()
 
 
 # 401
-def test_update_category_without_auth(client, categories, response_unauthorized):
+def test_update_category_without_auth(client, categories):
     response = client.put(
         f"/categories/{categories[0].id}",
         json={"name": "new name"},
     )
 
     assert response.status_code == 401
-    assert response.json == response_unauthorized
+    assert response.json == Unauthorized().to_dict()
 
 
 # 403
-def test_update_category_of_other_user(
-    client, login_users, categories, response_forbidden
-):
+def test_update_category_of_other_user(client, login_users, categories):
     user = login_users[0]
     if categories[0].user_id == verify_access_token(login_users[0])["sub"]:
         user = login_users[1]
@@ -202,7 +197,7 @@ def test_update_category_of_other_user(
     )
 
     assert response.status_code == 403
-    assert response.json == response_forbidden
+    assert response.json == Forbidden().to_dict()
 
 
 # 404
@@ -210,7 +205,6 @@ def test_update_category_with_invalid_id(
     client,
     login_users,
     categories,
-    response_not_found,
 ):
     response = client.put(
         "/categories/99999",
@@ -219,7 +213,7 @@ def test_update_category_with_invalid_id(
     )
 
     assert response.status_code == 404
-    assert response.json == response_not_found
+    assert response.json == NotFound().to_dict()
 
 
 # 409
@@ -267,20 +261,18 @@ def test_delete_category(client, login_users, categories, items):
 
 
 # 401
-def test_delete_category_without_auth(client, categories, response_unauthorized):
+def test_delete_category_without_auth(client, categories):
     response = client.delete(
         f"/categories/{categories[0].id}",
         data="{{}",
     )
 
     assert response.status_code == 401
-    assert response.json == response_unauthorized
+    assert response.json == Unauthorized().to_dict()
 
 
 # 403
-def test_delete_category_of_other_user(
-    client, login_users, categories, response_forbidden
-):
+def test_delete_category_of_other_user(client, login_users, categories):
     user = login_users[0]
     if categories[0].user_id == verify_access_token(login_users[0])["sub"]:
         user = login_users[1]
@@ -291,7 +283,7 @@ def test_delete_category_of_other_user(
     )
 
     assert response.status_code == 403
-    assert response.json == response_forbidden
+    assert response.json == Forbidden().to_dict()
 
 
 # 404
@@ -299,7 +291,6 @@ def test_delete_category_with_invalid_id(
     client,
     login_users,
     categories,
-    response_not_found,
 ):
     response = client.delete(
         "/categories/99999",
@@ -307,4 +298,4 @@ def test_delete_category_with_invalid_id(
     )
 
     assert response.status_code == 404
-    assert response.json == response_not_found
+    assert response.json == NotFound().to_dict()
