@@ -25,7 +25,6 @@ def require_token(func):
             user = db.session.get(UserModel, jwt_payload["sub"])
             if user is None:
                 raise Unauthorized()
-            # TODO: user -> kwargs[]
             return func(*args, **kwargs, user=user)
         except InvalidTokenError:
             logger.warning(message="Invalid token.")
@@ -38,15 +37,12 @@ def use_request_schema(schema):
     def wrapped_func(func):
         @wraps(func)
         def load_data(*args, **kwargs):
-            data: dict = {}
-            if request.method == "GET":
-                data: dict = schema().load(request.args)
             if request.method in ["POST", "PUT"]:
-                data: dict = schema().load(request.get_json())
-
-            kwargs["request_data"] = data
-
-            return func(*args, **kwargs)
+                data = request.get_json()
+            else:
+                data = request.args
+            data = schema.load(data)
+            return func(*args, **kwargs, request_data=data)
 
         return load_data
 
