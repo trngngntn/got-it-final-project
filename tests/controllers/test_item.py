@@ -82,6 +82,23 @@ def test_create_item_without_auth(client, create_categories, response_unauthoriz
     assert response.json == response_unauthorized
 
 
+# 404
+def test_create_item_with_invalid_category_id(
+    client,
+    login_users,
+    create_categories,
+    response_not_found,
+):
+    response = client.post(
+        "/categories/99999/items",
+        headers={"Authorization": f"Bearer {login_users[0]}"},
+        json={"name": "item", "description": "an item"},
+    )
+
+    assert response.status_code == 404
+    assert response.json == response_not_found
+
+
 # 409
 def test_create_item_with_duplicated_name(client, login_users, create_categories):
     test_create_item(client, login_users, create_categories)
