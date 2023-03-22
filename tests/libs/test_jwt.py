@@ -1,9 +1,8 @@
 import pytest
 
 from main.libs import jwt
-from main.models.user import UserModel
 
-# expired
+# this token is expired
 token = (
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
     "eyJ1aWQiOjIyLCJleHAiOjE2Nzg5NDUxMzJ9."
@@ -26,7 +25,6 @@ def test_verify_invalid_token():
 
 
 def test_verify_token():
-    user = UserModel(id=100)
-    token = jwt.create_access_token(user)
+    token = jwt.create_access_token(100)
     payload = jwt.verify_access_token(token)
     assert payload["sub"] == 100

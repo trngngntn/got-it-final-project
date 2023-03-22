@@ -7,15 +7,13 @@ from main import config
 from main.commons import const
 from main.commons.exceptions import InvalidJWTError
 from main.libs.log import ServiceLogger
-from main.models.user import UserModel
 
 logger = ServiceLogger(__name__)
 
 
-# TODO: input model -> input user id only
-def create_access_token(user: UserModel) -> str:
+def create_access_token(user_id: int) -> str:
     payload = {
-        "sub": user.id,
+        "sub": user_id,
         "exp": datetime.now(tz=timezone.utc)
         + timedelta(seconds=config.JWT_TIMEOUT_SECONDS),
     }

@@ -30,7 +30,8 @@ def register(request_data):
     db.session.commit()
 
     logger.info(message=f"New user registered (id={user.id}).")
-    token = jwt.create_access_token(user)
+
+    token = jwt.create_access_token(user.id)
 
     return {"access_token": token}, 201
 
@@ -45,7 +46,9 @@ def login(request_data):
 
     if user and password_lib.verify_password(password, user.password, user.salt):
         logger.info(message=f"User(id={user.id}) logged in.")
-        token = jwt.create_access_token(user)
+
+        token = jwt.create_access_token(user.id)
+
         return {"access_token": token}
 
     raise Unauthorized()
