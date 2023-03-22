@@ -67,7 +67,7 @@ def client(app, session):
 
 @pytest.fixture()
 # users
-def create_users():
+def users():
     users = []
     for i in range(0, 10):
         salt = password_lib.generate_salt()
@@ -84,9 +84,9 @@ def create_users():
 
 @pytest.fixture()
 # tokens
-def login_users(client, create_users):
+def login_users(client, users):
     user_tokens = []
-    for user in create_users:
+    for user in users:
         response = client.post(
             "/login",
             json={"email": user.email, "password": "Abc123"},
@@ -97,12 +97,12 @@ def login_users(client, create_users):
 
 @pytest.fixture()
 # name -> noun
-def create_categories(create_users):
+def categories(users):
     categories = []
     for i in range(0, 50):
         category = CategoryModel(
             name=f"category #{i}",
-            user_id=create_users[random.randint(0, 9)].id,
+            user_id=users[random.randint(0, 9)].id,
         )
         db.session.add(category)
         categories.append(category)
@@ -111,14 +111,14 @@ def create_categories(create_users):
 
 
 @pytest.fixture()
-def create_items(create_users, create_categories):
+def items(users, categories):
     items = []
-    for category in create_categories:
+    for category in categories:
         for i in range(0, random.randint(10, 50)):
             item = ItemModel(
                 name=f"item #{category.id}_{i}",
                 description="this is an item",
-                user_id=create_users[random.randint(0, 9)].id,
+                user_id=users[random.randint(0, 9)].id,
                 category_id=category.id,
             )
             db.session.add(item)

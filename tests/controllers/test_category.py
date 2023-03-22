@@ -6,7 +6,7 @@ from main.models.item import ItemModel
 
 # GET /categories
 # 200
-def test_get_all_categories(client, create_categories, response_not_found):
+def test_get_all_categories(client, categories, response_not_found):
     response = client.get("/categories")
     assert response.status_code == 200
 
@@ -15,7 +15,7 @@ def test_get_all_categories(client, create_categories, response_not_found):
     assert len(category_list) <= config.PAGINATION_MAX_ITEMS
     assert response.json["items_per_page"] == config.PAGINATION_MAX_ITEMS
 
-    total_category = len(create_categories)
+    total_category = len(categories)
     assert response.json["total_items"] == total_category
 
     # test with page > 1
@@ -113,8 +113,8 @@ def test_create_category_with_duplicated_name(client, login_users):
 
 # GET /categories/{id}
 # 200
-def test_get_category(create_categories, client):
-    response = client.get(f"/categories/{create_categories[0].id}")
+def test_get_category(categories, client):
+    response = client.get(f"/categories/{categories[0].id}")
 
     assert response.status_code == 200
 
@@ -126,7 +126,7 @@ def test_get_category(create_categories, client):
 
 
 # 404
-def test_get_category_with_invalid_id(client, create_categories, response_not_found):
+def test_get_category_with_invalid_id(client, categories, response_not_found):
     response = client.get("/categories/99999")
 
     assert response.status_code == 404
@@ -135,15 +135,15 @@ def test_get_category_with_invalid_id(client, create_categories, response_not_fo
 
 # PUT /categories/{id}
 # 200
-def test_update_category(client, login_users, create_categories):
-    user = create_categories[0].user_id
+def test_update_category(client, login_users, categories):
+    user = categories[0].user_id
     for i in range(0, len(login_users)):
         if verify_access_token(login_users[i])["sub"] == user:
             user = login_users[i]
             break
 
     response = client.put(
-        f"/categories/{create_categories[0].id}",
+        f"/categories/{categories[0].id}",
         headers={"Authorization": f"Bearer {user}"},
         json={"name": "new name"},
     )
@@ -154,21 +154,21 @@ def test_update_category(client, login_users, create_categories):
     updated = CategoryModel.query.filter(CategoryModel.name == "new name").first()
 
     assert updated
-    assert updated.id == create_categories[0].id
+    assert updated.id == categories[0].id
 
 
 # 400
 def test_update_category_with_malformed_request(
-    client, login_users, create_categories, response_bad_request
+    client, login_users, categories, response_bad_request
 ):
-    user = create_categories[0].user_id
+    user = categories[0].user_id
     for i in range(0, len(login_users)):
         if verify_access_token(login_users[i])["sub"] == user:
             user = login_users[i]
             break
 
     response = client.put(
-        f"/categories/{create_categories[0].id}",
+        f"/categories/{categories[0].id}",
         headers={"Authorization": f"Bearer {user}"},
         data="{{}",
     )
@@ -178,9 +178,9 @@ def test_update_category_with_malformed_request(
 
 
 # 401
-def test_update_category_without_auth(client, create_categories, response_unauthorized):
+def test_update_category_without_auth(client, categories, response_unauthorized):
     response = client.put(
-        f"/categories/{create_categories[0].id}",
+        f"/categories/{categories[0].id}",
         json={"name": "new name"},
     )
 
@@ -190,13 +190,13 @@ def test_update_category_without_auth(client, create_categories, response_unauth
 
 # 403
 def test_update_category_of_other_user(
-    client, login_users, create_categories, response_forbidden
+    client, login_users, categories, response_forbidden
 ):
     user = login_users[0]
-    if create_categories[0].user_id == verify_access_token(login_users[0])["sub"]:
+    if categories[0].user_id == verify_access_token(login_users[0])["sub"]:
         user = login_users[1]
     response = client.put(
-        f"/categories/{create_categories[0].id}",
+        f"/categories/{categories[0].id}",
         headers={"Authorization": f"Bearer {user}"},
         json={"name": "new name"},
     )
@@ -209,7 +209,7 @@ def test_update_category_of_other_user(
 def test_update_category_with_invalid_id(
     client,
     login_users,
-    create_categories,
+    categories,
     response_not_found,
 ):
     response = client.put(
@@ -226,17 +226,17 @@ def test_update_category_with_invalid_id(
 def test_update_category_with_duplicated_name(
     client,
     login_users,
-    create_categories,
+    categories,
 ):
-    test_update_category(client, login_users, create_categories)
-    user = create_categories[1].user_id
+    test_update_category(client, login_users, categories)
+    user = categories[1].user_id
     for i in range(0, len(login_users)):
         if verify_access_token(login_users[i])["sub"] == user:
             user = login_users[i]
             break
 
     response = client.put(
-        f"/categories/{create_categories[1].id}",
+        f"/categories/{categories[1].id}",
         headers={"Authorization": f"Bearer {user}"},
         json={"name": "new name"},
     )
@@ -247,29 +247,29 @@ def test_update_category_with_duplicated_name(
 
 # DELETE /categories/{id}
 # 200
-def test_delete_category(client, login_users, create_categories, create_items):
-    user = create_categories[0].user_id
+def test_delete_category(client, login_users, categories, items):
+    user = categories[0].user_id
     for i in range(0, len(login_users)):
         if verify_access_token(login_users[i])["sub"] == user:
             user = login_users[i]
             break
     response = client.delete(
-        f"/categories/{create_categories[0].id}",
+        f"/categories/{categories[0].id}",
         headers={"Authorization": f"Bearer {user}"},
     )
 
     assert response.status_code == 200
     assert response.json == {}
     assert (
-        ItemModel.query.filter(ItemModel.category_id == create_categories[0].id).first()
+        ItemModel.query.filter(ItemModel.category_id == categories[0].id).first()
         is None
     )
 
 
 # 401
-def test_delete_category_without_auth(client, create_categories, response_unauthorized):
+def test_delete_category_without_auth(client, categories, response_unauthorized):
     response = client.delete(
-        f"/categories/{create_categories[0].id}",
+        f"/categories/{categories[0].id}",
         data="{{}",
     )
 
@@ -279,14 +279,14 @@ def test_delete_category_without_auth(client, create_categories, response_unauth
 
 # 403
 def test_delete_category_of_other_user(
-    client, login_users, create_categories, response_forbidden
+    client, login_users, categories, response_forbidden
 ):
     user = login_users[0]
-    if create_categories[0].user_id == verify_access_token(login_users[0])["sub"]:
+    if categories[0].user_id == verify_access_token(login_users[0])["sub"]:
         user = login_users[1]
 
     response = client.delete(
-        f"/categories/{create_categories[0].id}",
+        f"/categories/{categories[0].id}",
         headers={"Authorization": f"Bearer {user}"},
     )
 
@@ -298,7 +298,7 @@ def test_delete_category_of_other_user(
 def test_delete_category_with_invalid_id(
     client,
     login_users,
-    create_categories,
+    categories,
     response_not_found,
 ):
     response = client.delete(

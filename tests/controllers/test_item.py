@@ -5,8 +5,8 @@ from main.models.item import ItemModel
 
 # GET /categories/{cat_id}/items
 # 200
-def test_get_all_items(client, create_categories, create_items, response_not_found):
-    path = f"/categories/{create_categories[0].id}/items"
+def test_get_all_items(client, categories, items, response_not_found):
+    path = f"/categories/{categories[0].id}/items"
     response = client.get(path)
     assert response.status_code == 200
 
@@ -37,9 +37,9 @@ def test_get_all_items(client, create_categories, create_items, response_not_fou
 
 # POST /categories/{cat_id}/items
 # 201
-def test_create_item(client, login_users, create_categories):
+def test_create_item(client, login_users, categories):
     response = client.post(
-        f"/categories/{create_categories[0].id}/items",
+        f"/categories/{categories[0].id}/items",
         headers={"Authorization": f"Bearer {login_users[0]}"},
         json={"name": "itemx", "description": "an item"},
     )
@@ -51,18 +51,18 @@ def test_create_item(client, login_users, create_categories):
 
     assert created
     assert created.user_id == verify_access_token(login_users[0])["sub"]
-    assert created.category_id == create_categories[0].id
+    assert created.category_id == categories[0].id
 
 
 # 400
 def test_create_item_with_malformed_request(
     client,
     login_users,
-    create_categories,
+    categories,
     response_bad_request,
 ):
     response = client.post(
-        f"/categories/{create_categories[0].id}/items",
+        f"/categories/{categories[0].id}/items",
         headers={"Authorization": f"Bearer {login_users[0]}"},
         data="{name: abcd}",
     )
@@ -72,9 +72,9 @@ def test_create_item_with_malformed_request(
 
 
 # 401
-def test_create_item_without_auth(client, create_categories, response_unauthorized):
+def test_create_item_without_auth(client, categories, response_unauthorized):
     response = client.post(
-        f"/categories/{create_categories[0].id}/items",
+        f"/categories/{categories[0].id}/items",
         json={"name": "item", "description": "an item"},
     )
 
@@ -86,7 +86,7 @@ def test_create_item_without_auth(client, create_categories, response_unauthoriz
 def test_create_item_with_invalid_category_id(
     client,
     login_users,
-    create_categories,
+    categories,
     response_not_found,
 ):
     response = client.post(
@@ -100,11 +100,11 @@ def test_create_item_with_invalid_category_id(
 
 
 # 409
-def test_create_item_with_duplicated_name(client, login_users, create_categories):
-    test_create_item(client, login_users, create_categories)
+def test_create_item_with_duplicated_name(client, login_users, categories):
+    test_create_item(client, login_users, categories)
 
     response = client.post(
-        f"/categories/{create_categories[0].id}/items",
+        f"/categories/{categories[0].id}/items",
         headers={"Authorization": f"Bearer {login_users[0]}"},
         json={"name": "itemx", "description": "an item"},
     )
@@ -115,10 +115,8 @@ def test_create_item_with_duplicated_name(client, login_users, create_categories
 
 # GET /categories/{cat_id}/items/{itm_id}
 # 200
-def test_get_item(create_items, client):
-    response = client.get(
-        f"/categories/{create_items[0].category_id}/items/{create_items[0].id}"
-    )
+def test_get_item(items, client):
+    response = client.get(f"/categories/{items[0].category_id}/items/{items[0].id}")
 
     assert response.status_code == 200
 
@@ -132,15 +130,13 @@ def test_get_item(create_items, client):
 
 
 # 404
-def test_get_item_with_invalid_ids(
-    client, create_categories, create_items, response_not_found
-):
-    response = client.get(f"/categories/{create_categories[0].id}/items/99999")
+def test_get_item_with_invalid_ids(client, categories, items, response_not_found):
+    response = client.get(f"/categories/{categories[0].id}/items/99999")
 
     assert response.status_code == 404
     assert response.json == response_not_found
 
-    response = client.get(f"/categories/99999/items/{create_items[0].id}")
+    response = client.get(f"/categories/99999/items/{items[0].id}")
 
     assert response.status_code == 404
     assert response.json == response_not_found
@@ -148,8 +144,8 @@ def test_get_item_with_invalid_ids(
 
 # PUT /categories/{cat_id}/items/{itm_id}
 # 200
-def test_update_item(client, login_users, create_items):
-    user = create_items[0].user_id
+def test_update_item(client, login_users, items):
+    user = items[0].user_id
 
     for i in range(0, len(login_users)):
         if verify_access_token(login_users[i])["sub"] == user:
@@ -157,7 +153,7 @@ def test_update_item(client, login_users, create_items):
             break
 
     response = client.put(
-        f"/categories/{create_items[0].category_id}/items/{create_items[0].id}",
+        f"/categories/{items[0].category_id}/items/{items[0].id}",
         headers={"Authorization": f"Bearer {user}"},
         json={"description": "new description"},
     )
@@ -166,7 +162,7 @@ def test_update_item(client, login_users, create_items):
     assert response.json == {}
 
     response = client.put(
-        f"/categories/{create_items[0].category_id}/items/{create_items[0].id}",
+        f"/categories/{items[0].category_id}/items/{items[0].id}",
         headers={"Authorization": f"Bearer {user}"},
         json={"name": "new name"},
     )
@@ -177,15 +173,15 @@ def test_update_item(client, login_users, create_items):
     updated = ItemModel.query.filter(ItemModel.name == "new name").first()
 
     assert updated
-    assert updated.id == create_items[0].id
+    assert updated.id == items[0].id
     assert updated.description == "new description"
 
 
 # 400/000
 def test_update_item_with_malformed_request(
-    client, login_users, create_items, response_bad_request
+    client, login_users, items, response_bad_request
 ):
-    user = create_items[0].user_id
+    user = items[0].user_id
 
     for i in range(0, len(login_users)):
         if verify_access_token(login_users[i])["sub"] == user:
@@ -193,7 +189,7 @@ def test_update_item_with_malformed_request(
             break
 
     response = client.put(
-        f"/categories/{create_items[0].category_id}/items/{create_items[0].id}",
+        f"/categories/{items[0].category_id}/items/{items[0].id}",
         headers={"Authorization": f"Bearer {user}"},
         data="{{}",
     )
@@ -203,9 +199,9 @@ def test_update_item_with_malformed_request(
 
 
 # 401
-def test_update_item_without_auth(client, create_items, response_unauthorized):
+def test_update_item_without_auth(client, items, response_unauthorized):
     response = client.put(
-        f"/categories/{create_items[0].category_id}/items/{create_items[0].id}",
+        f"/categories/{items[0].category_id}/items/{items[0].id}",
         json={"name": "new name", "description": "new description"},
     )
 
@@ -214,15 +210,13 @@ def test_update_item_without_auth(client, create_items, response_unauthorized):
 
 
 # 403
-def test_update_item_of_other_user(
-    client, login_users, create_items, response_forbidden
-):
+def test_update_item_of_other_user(client, login_users, items, response_forbidden):
     user = login_users[0]
-    if create_items[0].user_id == verify_access_token(login_users[0])["sub"]:
+    if items[0].user_id == verify_access_token(login_users[0])["sub"]:
         user = login_users[1]
 
     response = client.put(
-        f"/categories/{create_items[0].category_id}/items/{create_items[0].id}",
+        f"/categories/{items[0].category_id}/items/{items[0].id}",
         headers={"Authorization": f"Bearer {user}"},
         json={"name": "new name"},
     )
@@ -235,12 +229,12 @@ def test_update_item_of_other_user(
 def test_update_item_with_invalid_id(
     client,
     login_users,
-    create_categories,
-    create_items,
+    categories,
+    items,
     response_not_found,
 ):
     response = client.put(
-        f"/categories/99999/items/{create_items[0].id}",
+        f"/categories/99999/items/{items[0].id}",
         headers={"Authorization": f"Bearer {login_users[0]}"},
         json={"name": "new name"},
     )
@@ -249,7 +243,7 @@ def test_update_item_with_invalid_id(
     assert response.json == response_not_found
 
     response = client.put(
-        f"/categories/{create_categories[0].id}/items/99999",
+        f"/categories/{categories[0].id}/items/99999",
         headers={"Authorization": f"Bearer {login_users[0]}"},
         json={"name": "new name"},
     )
@@ -259,9 +253,9 @@ def test_update_item_with_invalid_id(
 
 
 # 409
-def test_update_item_with_duplicated_name(client, login_users, create_items):
-    test_update_item(client, login_users, create_items)
-    user = create_items[1].user_id
+def test_update_item_with_duplicated_name(client, login_users, items):
+    test_update_item(client, login_users, items)
+    user = items[1].user_id
 
     for i in range(0, len(login_users)):
         if verify_access_token(login_users[i])["sub"] == user:
@@ -269,7 +263,7 @@ def test_update_item_with_duplicated_name(client, login_users, create_items):
             break
 
     response = client.put(
-        f"/categories/{create_items[1].category_id}/items/{create_items[1].id}",
+        f"/categories/{items[1].category_id}/items/{items[1].id}",
         headers={"Authorization": f"Bearer {user}"},
         json={"name": "new name"},
     )
@@ -280,8 +274,8 @@ def test_update_item_with_duplicated_name(client, login_users, create_items):
 
 # DELETE /categories/{cat_id}/items/{itm_id}
 # 200
-def test_delete_item(client, login_users, create_items):
-    user = create_items[0].user_id
+def test_delete_item(client, login_users, items):
+    user = items[0].user_id
 
     for i in range(0, len(login_users)):
         if verify_access_token(login_users[i])["sub"] == user:
@@ -289,23 +283,20 @@ def test_delete_item(client, login_users, create_items):
             break
 
     response = client.delete(
-        f"/categories/{create_items[0].category_id}/items/{create_items[0].id}",
+        f"/categories/{items[0].category_id}/items/{items[0].id}",
         headers={"Authorization": f"Bearer {user}"},
     )
 
     assert response.status_code == 200
     assert response.json == {}
 
-    assert (
-        ItemModel.query.filter(ItemModel.category_id == create_items[0].id).first()
-        is None
-    )
+    assert ItemModel.query.filter(ItemModel.category_id == items[0].id).first() is None
 
 
 # 401
-def test_delete_item_without_auth(client, create_items, response_unauthorized):
+def test_delete_item_without_auth(client, items, response_unauthorized):
     response = client.delete(
-        f"/categories/{create_items[0].category_id}/items/{create_items[0].id}",
+        f"/categories/{items[0].category_id}/items/{items[0].id}",
         data="{{}",
     )
 
@@ -314,16 +305,14 @@ def test_delete_item_without_auth(client, create_items, response_unauthorized):
 
 
 # 403
-def test_delete_item_of_other_user(
-    client, login_users, create_items, response_forbidden
-):
+def test_delete_item_of_other_user(client, login_users, items, response_forbidden):
     user = login_users[0]
 
-    if create_items[0].user_id == verify_access_token(login_users[0])["sub"]:
+    if items[0].user_id == verify_access_token(login_users[0])["sub"]:
         user = login_users[1]
 
     response = client.delete(
-        f"/categories/{create_items[0].category_id}/items/{create_items[0].id}",
+        f"/categories/{items[0].category_id}/items/{items[0].id}",
         headers={"Authorization": f"Bearer {user}"},
     )
 
@@ -335,12 +324,12 @@ def test_delete_item_of_other_user(
 def test_delete_item_with_invalid_id(
     client,
     login_users,
-    create_categories,
-    create_items,
+    categories,
+    items,
     response_not_found,
 ):
     response = client.delete(
-        f"/categories/99999/items/{create_items[0].id}",
+        f"/categories/99999/items/{items[0].id}",
         headers={"Authorization": f"Bearer {login_users[0]}"},
     )
 
@@ -348,7 +337,7 @@ def test_delete_item_with_invalid_id(
     assert response.json == response_not_found
 
     response = client.delete(
-        f"/categories/{create_categories[0].id}/items/99999",
+        f"/categories/{categories[0].id}/items/99999",
         headers={"Authorization": f"Bearer {login_users[0]}"},
     )
 
