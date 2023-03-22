@@ -1,4 +1,5 @@
 import os
+import random
 import sys
 from pathlib import Path
 
@@ -8,6 +9,10 @@ from alembic.config import Config
 
 from main import app as _app
 from main import db
+from main.libs import passwordlib
+from main.models.category import CategoryModel
+from main.models.item import ItemModel
+from main.models.user import UserModel
 
 if os.getenv("ENVIRONMENT") != "test":
     print('Tests should be run with "ENVIRONMENT=test"')
@@ -58,3 +63,62 @@ def session(recreate_database):
 @pytest.fixture(scope="function", autouse=True)
 def client(app, session):
     return app.test_client()
+
+
+@pytest.fixture()
+def create_users():
+    users = []
+    for i in range(0, 10):
+        salt = passwordlib.generate_salt()
+        user = UserModel(
+            email=f"user{i}@gmail.com",
+            salt=salt,
+            password=passwordlib.hash("Abc123", salt),
+        )
+        db.session.add(user)
+        users.append(user)
+    db.session.commit()
+    return users
+
+
+@pytest.fixture()
+def login_users(client, create_users):
+    user_tokens = []
+    for user in create_users:
+        response = client.post(
+            "/login",
+            json={"email": user.email, "password": "Abc123"},
+        )
+        user_tokens.append(response.json["access_token"])
+    return user_tokens
+
+
+@pytest.fixture()
+def create_categories(create_users):
+    categories = []
+    for i in range(0, 50):
+        category = CategoryModel(
+            name=f"category #{i}",
+            user_id=create_users[random.randint(0, 9)].id,
+        )
+        db.session.add(category)
+        categories.append(category)
+    db.session.commit()
+    return categories
+
+
+@pytest.fixture()
+def create_items(create_users, create_categories):
+    items = []
+    for category in create_categories:
+        for i in range(0, random.randint(10, 50)):
+            item = ItemModel(
+                name=f"item #{category.id}_{i}",
+                description="this is an item",
+                user_id=create_users[random.randint(0, 9)].id,
+                category_id=category.id,
+            )
+            db.session.add(item)
+            items.append(item)
+    db.session.commit()
+    return items

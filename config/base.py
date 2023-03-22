@@ -10,7 +10,7 @@ class BaseConfig:
 
     JWT_SECRET_KEY = "66b49b551a0c0fe0"
     JWT_ALGO = "HS256"
-    JWT_TIMEOUT_SECONDS = 60 * 60
+    JWT_TIMEOUT_SECONDS = 5 * 60
 
     HASH_ALGO = "sha256"
     HASH_ITERS = 100_000

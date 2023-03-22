@@ -28,6 +28,7 @@ def test_get_all_categories(client, create_categories, response_not_found):
 
     # test with page > max_page
     response = client.get(f"/categories?page={page + 1}")
+
     assert response.status_code == 404
     assert response.json == response_not_found
 
@@ -40,9 +41,12 @@ def test_create_category(client, login_users):
         headers={"Authorization": f"Bearer {login_users[0]}"},
         json={"name": "categoryx"},
     )
+
     assert response.status_code == 201
     assert response.json == {}
+
     created = CategoryModel.query.filter(CategoryModel.name == "categoryx").first()
+
     assert created
     assert created.user_id == verify_access_token(login_users[0])["sub"]
 
@@ -58,6 +62,7 @@ def test_create_category_with_malformed_request(
         headers={"Authorization": f"Bearer {login_users[0]}"},
         data="{name: abcd}",
     )
+
     assert response.status_code == 400
     assert response.json == response_bad_request
 
@@ -73,6 +78,7 @@ def test_create_category_with_long_name(
         headers={"Authorization": f"Bearer {login_users[0]}"},
         json={"name": "123456789012345678901234567890123456789012345678901234567890"},
     )
+
     assert response.status_code == 400
     assert response.json["error_code"] == 400001
 
@@ -84,6 +90,7 @@ def test_create_category_without_auth(client, response_unauthorized):
         headers={"Authorization": "abcd"},
         json={"name": "category"},
     )
+
     assert response.status_code == 401
     assert response.json == response_unauthorized
 
@@ -91,11 +98,13 @@ def test_create_category_without_auth(client, response_unauthorized):
 # 409
 def test_create_category_with_duplicated_name(client, login_users):
     test_create_category(client, login_users)
+
     response = client.post(
         "/categories",
         headers={"Authorization": f"Bearer {login_users[0]}"},
         json={"name": "categoryx"},
     )
+
     assert response.status_code == 409
     assert response.json["error_code"] == 409002
 
@@ -104,8 +113,11 @@ def test_create_category_with_duplicated_name(client, login_users):
 # 200
 def test_get_category(create_categories, client):
     response = client.get(f"/categories/{create_categories[0].id}")
+
     assert response.status_code == 200
+
     data = response.json
+
     assert type(data["id"]) is int
     assert type(data["user_id"]) is int
     assert type(data["name"]) is str
@@ -114,6 +126,7 @@ def test_get_category(create_categories, client):
 # 404
 def test_get_category_with_invalid_id(client, create_categories, response_not_found):
     response = client.get("/categories/99999")
+
     assert response.status_code == 404
     assert response.json == response_not_found
 
@@ -126,14 +139,18 @@ def test_update_category(client, login_users, create_categories):
         if verify_access_token(login_users[i])["sub"] == user:
             user = login_users[i]
             break
+
     response = client.put(
         f"/categories/{create_categories[0].id}",
         headers={"Authorization": f"Bearer {user}"},
         json={"name": "new name"},
     )
+
     assert response.status_code == 200
     assert response.json == {}
+
     updated = CategoryModel.query.filter(CategoryModel.name == "new name").first()
+
     assert updated
     assert updated.id == create_categories[0].id
 
@@ -147,11 +164,13 @@ def test_update_category_with_malformed_request(
         if verify_access_token(login_users[i])["sub"] == user:
             user = login_users[i]
             break
+
     response = client.put(
         f"/categories/{create_categories[0].id}",
         headers={"Authorization": f"Bearer {user}"},
         data="{{}",
     )
+
     assert response.status_code == 400
     assert response.json == response_bad_request
 
@@ -162,6 +181,7 @@ def test_update_category_without_auth(client, create_categories, response_unauth
         f"/categories/{create_categories[0].id}",
         json={"name": "new name"},
     )
+
     assert response.status_code == 401
     assert response.json == response_unauthorized
 
@@ -178,6 +198,7 @@ def test_update_category_of_other_user(
         headers={"Authorization": f"Bearer {user}"},
         json={"name": "new name"},
     )
+
     assert response.status_code == 403
     assert response.json == response_forbidden
 
@@ -194,6 +215,7 @@ def test_update_category_with_invalid_id(
         headers={"Authorization": f"Bearer {login_users[0]}"},
         json={"name": "new name"},
     )
+
     assert response.status_code == 404
     assert response.json == response_not_found
 
@@ -210,11 +232,13 @@ def test_update_category_with_duplicated_name(
         if verify_access_token(login_users[i])["sub"] == user:
             user = login_users[i]
             break
+
     response = client.put(
         f"/categories/{create_categories[1].id}",
         headers={"Authorization": f"Bearer {user}"},
         json={"name": "new name"},
     )
+
     assert response.status_code == 409
     assert response.json["error_code"] == 409002
 
@@ -231,9 +255,9 @@ def test_delete_category(client, login_users, create_categories, create_items):
         f"/categories/{create_categories[0].id}",
         headers={"Authorization": f"Bearer {user}"},
     )
+
     assert response.status_code == 200
     assert response.json == {}
-
     assert (
         ItemModel.query.filter(ItemModel.category_id == create_categories[0].id).first()
         is None
@@ -246,6 +270,7 @@ def test_delete_category_without_auth(client, create_categories, response_unauth
         f"/categories/{create_categories[0].id}",
         data="{{}",
     )
+
     assert response.status_code == 401
     assert response.json == response_unauthorized
 
@@ -257,10 +282,12 @@ def test_delete_category_of_other_user(
     user = login_users[0]
     if create_categories[0].user_id == verify_access_token(login_users[0])["sub"]:
         user = login_users[1]
+
     response = client.delete(
         f"/categories/{create_categories[0].id}",
         headers={"Authorization": f"Bearer {user}"},
     )
+
     assert response.status_code == 403
     assert response.json == response_forbidden
 
@@ -276,5 +303,6 @@ def test_delete_category_with_invalid_id(
         "/categories/99999",
         headers={"Authorization": f"Bearer {login_users[0]}"},
     )
+
     assert response.status_code == 404
     assert response.json == response_not_found

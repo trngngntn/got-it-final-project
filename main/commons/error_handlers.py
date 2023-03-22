@@ -18,13 +18,15 @@ from .exceptions import (
     ValidationError,
 )
 
+logger = ServiceLogger(__name__)
+
 
 def register_error_handlers(app):
     @app.errorhandler(json.decoder.JSONDecodeError)
     @app.errorhandler(exceptions.BadRequest)
     @app.errorhandler(400)
     def handle_bad_request(e):
-        ServiceLogger(__name__).warning(message=e)
+        logger.warning(message=e)
         return BadRequest().to_response()
 
     @app.errorhandler(jwt.exceptions.InvalidTokenError)
@@ -46,10 +48,6 @@ def register_error_handlers(app):
 
     @app.errorhandler(BaseError)
     def handle_error(error: BaseError):
-        from main.libs.log import ServiceLogger
-
-        logger = ServiceLogger(__name__)
-
         status_code = error.status_code
         if (
             isinstance(status_code, int)
@@ -70,9 +68,6 @@ def register_error_handlers(app):
 
     @app.errorhandler(Exception)
     def handle_exception(e):
-        from main.libs.log import ServiceLogger
-
-        logger = ServiceLogger(__name__)
         logger.exception(message=str(e))
 
         return InternalServerError(error_message=str(e)).to_response()

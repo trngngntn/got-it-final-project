@@ -1,8 +1,7 @@
 from flask import make_response
 
 from main import app, config, db
-from main.commons import http_status as HTTPStatus
-from main.commons.decorators import require_token, response_schema
+from main.commons.decorators import get_item, require_token, use_request_schema
 from main.commons.exceptions import DuplicatedItemNameError, Forbidden
 from main.models.category import CategoryModel
 from main.models.item import ItemModel
@@ -11,58 +10,54 @@ from main.schemas.item import ItemListSchema, ItemSchema, ItemUpdateSchema
 
 
 @app.get("/categories/<int:category_id>/items")
-@response_schema(ParamPageSchema)
-def get_all_items_by_category(category_id, page):
+@use_request_schema(ParamPageSchema)
+def get_all_items_by_category(category_id, request_data):
+    page = request_data["page"]
     category = CategoryModel.query.get_or_404(category_id)
     items = category.items.paginate(
-        page=page, max_per_page=config.PAGINATION_MAX_ITEMS, error_out=True, count=True
+        page=page,
+        max_per_page=config.PAGINATION_MAX_ITEMS,
     )
     return ItemListSchema().jsonify(items)
 
 
 @app.post("/categories/<int:category_id>/items")
 @require_token
-@response_schema(ItemSchema)
-def create_item(category_id, user, **kwargs):
-    if ItemModel.query_by_name(kwargs["name"]):
+@use_request_schema(ItemSchema)
+def create_item(category_id, user, request_data):
+    if ItemModel.query_by_name(request_data.get("name")):
         raise DuplicatedItemNameError()
 
-    item = ItemModel(**kwargs, user_id=user.id, category_id=category_id)
+    item = ItemModel(**request_data, user_id=user.id, category_id=category_id)
     db.session.add(item)
     db.session.commit()
 
-    return make_response({}, HTTPStatus.CREATED)
+    return make_response({}, 201)
 
 
 @app.get("/categories/<int:category_id>/items/<int:item_id>")
-def get_item_by_id(category_id, item_id):
-    item = ItemModel.query.filter(
-        ItemModel.category_id == category_id,
-        ItemModel.id == item_id,
-    ).first_or_404()
+@get_item
+def get_item_by_id(item, **_):
     return ItemSchema().jsonify(item)
 
 
 @app.put("/categories/<int:category_id>/items/<int:item_id>")
 @require_token
-@response_schema(ItemUpdateSchema)
-def update_item(category_id, item_id, user, **kwargs):
-    item = ItemModel.query.filter(
-        ItemModel.category_id == category_id, ItemModel.id == item_id
-    ).first_or_404()
-
+@use_request_schema(ItemUpdateSchema)
+@get_item
+def update_item(item, user, request_data, **_):
     if item.user_id != user.id:
         raise Forbidden()
 
-    if kwargs.get("name"):
-        item_with_same_name = ItemModel.query_by_name(kwargs["name"])
-        if item_with_same_name and item_with_same_name.id != item_id:
+    if request_data.get("name"):
+        item_with_same_name = ItemModel.query_by_name(request_data["name"])
+        if item_with_same_name and item_with_same_name.id != item.id:
             raise DuplicatedItemNameError()
 
-        item.name = kwargs["name"]
+        item.name = request_data["name"]
 
-    if kwargs.get("description"):
-        item.description = kwargs["description"]
+    if request_data.get("description"):
+        item.description = request_data["description"]
 
     db.session.commit()
 
@@ -71,11 +66,8 @@ def update_item(category_id, item_id, user, **kwargs):
 
 @app.delete("/categories/<int:category_id>/items/<int:item_id>")
 @require_token
-def delete_item(category_id, item_id, user):
-    item = ItemModel.query.filter(
-        ItemModel.category_id == category_id, ItemModel.id == item_id
-    ).first_or_404()
-
+@get_item
+def delete_item(item, user, **_):
     if item.user_id != user.id:
         raise Forbidden()
 

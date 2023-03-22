@@ -17,4 +17,4 @@ class PaginationSchema(BaseSchema):
 
 
 class ParamPageSchema(BaseSchema):
-    page = fields.Integer(missing=1, range=validate.Range(min=1))
+    page = fields.Integer(load_default=1, range=validate.Range(min=1))

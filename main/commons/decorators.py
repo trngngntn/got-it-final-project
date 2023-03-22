@@ -7,6 +7,7 @@ from main import db
 from main.commons.exceptions import Unauthorized
 from main.libs.jwt import extract_jwt_from_header, verify_access_token
 from main.libs.log import ServiceLogger
+from main.models.item import ItemModel
 from main.models.user import UserModel
 
 logger = ServiceLogger(__name__)
@@ -32,7 +33,7 @@ def require_token(func):
     return wrapped_func
 
 
-def response_schema(schema):
+def use_request_schema(schema):
     def wrapped_func(func):
         @wraps(func)
         def load_data(*args, **kwargs):
@@ -41,8 +42,24 @@ def response_schema(schema):
                 data: dict = schema().load(request.args)
             if request.method in ["POST", "PUT"]:
                 data: dict = schema().load(request.get_json())
-            return func(*args, **kwargs, **data)
+
+            kwargs["request_data"] = data
+
+            return func(*args, **kwargs)
 
         return load_data
+
+    return wrapped_func
+
+
+def get_item(func):
+    @wraps(func)
+    def wrapped_func(*args, **kwargs):
+        category_id = kwargs.get("category_id")
+        item_id = kwargs.get("item_id")
+        item = ItemModel.query.filter(
+            ItemModel.category_id == category_id, ItemModel.id == item_id
+        ).first_or_404()
+        return func(*args, **kwargs, item=item)
 
     return wrapped_func

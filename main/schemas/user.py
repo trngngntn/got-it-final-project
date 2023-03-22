@@ -7,7 +7,7 @@ from .base import BaseSchema
 
 class UserSchema(BaseSchema):
     id = fields.Integer(dump_only=True)
-    email = fields.Email(required=True)
+    email = fields.Email(required=True, validate=validate.Length(max=254))
     password = fields.String(
         required=True,
         load_only=True,
