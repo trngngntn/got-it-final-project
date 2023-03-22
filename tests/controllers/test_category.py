@@ -9,9 +9,10 @@ def test_get_all_categories(client, create_categories, response_not_found):
     response = client.get("/categories")
     assert response.status_code == 200
 
-    catergory_list = response.json["data"]
+    category_list = response.json["data"]
 
-    assert len(catergory_list) <= 20
+    assert len(category_list) <= 20
+    # TODO: 20 -> PAGINATION_MAX_PAGES
     assert response.json["items_per_page"] == 20
 
     total_category = len(create_categories)
@@ -47,7 +48,7 @@ def test_create_category(client, login_users):
 
     created = CategoryModel.query.filter(CategoryModel.name == "categoryx").first()
 
-    assert created
+    assert created  # is not None
     assert created.user_id == verify_access_token(login_users[0])["sub"]
 
 
@@ -96,6 +97,7 @@ def test_create_category_without_auth(client, response_unauthorized):
 
 
 # 409
+# use pytest parameterize
 def test_create_category_with_duplicated_name(client, login_users):
     test_create_category(client, login_users)
 

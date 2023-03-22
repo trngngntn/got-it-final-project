@@ -2,6 +2,7 @@ import re
 
 from main.libs import passwordlib
 
+# use param from config
 PATTERN_SALT = "^[0-9a-f]{16}$"
 PATTERN_HASH = "^[0-9a-f]{64}$"
 

@@ -25,6 +25,7 @@ def require_token(func):
             user = db.session.get(UserModel, jwt_payload["sub"])
             if user is None:
                 raise Unauthorized()
+            # TODO: user -> kwargs[]
             return func(*args, **kwargs, user=user)
         except InvalidTokenError:
             logger.warning(message="Invalid token.")

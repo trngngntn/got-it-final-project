@@ -24,7 +24,7 @@ def get_all_categories(request_data):
 def create_category(user, request_data):
     if CategoryModel.query_by_name(request_data["name"]):
         raise DuplicatedCategoryNameError()
-
+    # get() -> []
     category = CategoryModel(name=request_data.get("name"), user_id=user.id)
     db.session.add(category)
     db.session.commit()
@@ -52,10 +52,10 @@ def update_category(category_id, user, request_data):
     category_with_same_name = CategoryModel.query_by_name(name)
     if category_with_same_name and category_with_same_name.id != category_id:
         raise DuplicatedCategoryNameError()
-
+    # catch database exception for name duplicate
     category.name = name
     db.session.commit()
-
+    # TODO: remove redundant make_response
     return make_response({})
 
 

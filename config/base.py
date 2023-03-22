@@ -9,14 +9,17 @@ class BaseConfig:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     JWT_SECRET_KEY = "66b49b551a0c0fe0"
+    #
     JWT_ALGO = "HS256"
     JWT_TIMEOUT_SECONDS = 5 * 60
 
+    #
     HASH_ALGO = "sha256"
     HASH_ITERS = 100_000
     SALT_BYTE_LENGTH = 8
     SALT_HEX_LENGTH = SALT_BYTE_LENGTH * 2
 
+    #
     PATTERN_PWD = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{6,}$"
 
     PAGINATION_MAX_ITEMS = 20

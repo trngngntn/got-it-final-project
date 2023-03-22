@@ -10,6 +10,7 @@ from main.models.user import UserModel
 logger = ServiceLogger(__name__)
 
 
+# TODO: input model -> input user id only
 def create_access_token(user: UserModel) -> str:
     payload = {
         "sub": user.id,
@@ -29,4 +30,5 @@ def verify_access_token(token: str) -> dict:
 def extract_jwt_from_header(header: str) -> str:
     if header.startswith("Bearer "):
         return header.split(" ")[1]
+    # handle defined error
     raise InvalidTokenError()

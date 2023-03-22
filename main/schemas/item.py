@@ -18,6 +18,7 @@ class ItemListSchema(PaginationSchema):
     data = fields.List(
         fields.Nested(ItemSchema),
         attribute="items",
+        # 20 -> config PAGINATION_MAX_PAGES
         validate=validate.Length(max=20),
     )
 

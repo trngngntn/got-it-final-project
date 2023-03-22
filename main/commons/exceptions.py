@@ -77,6 +77,7 @@ class BaseError(Exception):
         return make_response(response, self.status_code)
 
 
+# add invalid token error
 class BadRequest(BaseError):
     status_code = StatusCode.BAD_REQUEST
     error_message = _ErrorMessage.BAD_REQUEST

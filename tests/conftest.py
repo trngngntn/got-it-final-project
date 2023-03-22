@@ -66,6 +66,7 @@ def client(app, session):
 
 
 @pytest.fixture()
+# users
 def create_users():
     users = []
     for i in range(0, 10):
@@ -82,6 +83,7 @@ def create_users():
 
 
 @pytest.fixture()
+# tokens
 def login_users(client, create_users):
     user_tokens = []
     for user in create_users:
@@ -94,6 +96,7 @@ def login_users(client, create_users):
 
 
 @pytest.fixture()
+# name -> noun
 def create_categories(create_users):
     categories = []
     for i in range(0, 50):

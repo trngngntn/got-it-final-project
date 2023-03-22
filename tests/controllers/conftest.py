@@ -2,6 +2,7 @@ import pytest
 
 
 class ErrorResponse:
+    # TODO: remove, import from commons
     def __init__(self, error_code, error_message):
         self.msg_dict = {"error_code": error_code, "error_message": error_message}
         if error_code != 400001:
