@@ -1,5 +1,3 @@
-from flask import make_response
-
 from main import app, config, db
 from main.commons.decorators import get_item, require_token, use_request_schema
 from main.commons.exceptions import DuplicatedItemNameError, Forbidden
@@ -34,7 +32,7 @@ def create_item(category_id, user, request_data):
     db.session.add(item)
     db.session.commit()
 
-    return make_response({}, 201)
+    return {}, 201
 
 
 @app.get("/categories/<int:category_id>/items/<int:item_id>")
@@ -63,7 +61,7 @@ def update_item(item, user, request_data, **_):
 
     db.session.commit()
 
-    return make_response({})
+    return {}
 
 
 @app.delete("/categories/<int:category_id>/items/<int:item_id>")
@@ -76,4 +74,4 @@ def delete_item(item, user, **_):
     db.session.delete(item)
     db.session.commit()
 
-    return make_response({})
+    return {}

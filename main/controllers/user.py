@@ -1,5 +1,3 @@
-from flask import make_response
-
 from main import app, db
 from main.commons.decorators import use_request_schema
 from main.commons.exceptions import DuplicatedEmailError, Unauthorized
@@ -34,7 +32,7 @@ def register(request_data):
     logger.info(message=f"New user registered (id={user.id}).")
     token = jwt.create_access_token(user)
 
-    return make_response({"access_token": token}, 201)
+    return {"access_token": token}, 201
 
 
 @app.post("/login")
@@ -48,6 +46,6 @@ def login(request_data):
     if user and password_lib.verify_password(password, user.password, user.salt):
         logger.info(message=f"User(id={user.id}) logged in.")
         token = jwt.create_access_token(user)
-        return make_response({"access_token": token})
+        return {"access_token": token}
 
     raise Unauthorized()

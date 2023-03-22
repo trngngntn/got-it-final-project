@@ -1,5 +1,3 @@
-from flask import make_response
-
 from main import app, config, db
 from main.commons.decorators import require_token, use_request_schema
 from main.commons.exceptions import DuplicatedCategoryNameError, Forbidden
@@ -29,7 +27,7 @@ def create_category(user, request_data):
     db.session.add(category)
     db.session.commit()
 
-    return make_response({}, 201)
+    return {}, 201
 
 
 @app.get("/categories/<int:category_id>")
@@ -55,8 +53,8 @@ def update_category(category_id, user, request_data):
     # catch database exception for name duplicate
     category.name = name
     db.session.commit()
-    # TODO: remove redundant make_response
-    return make_response({})
+
+    return {}
 
 
 @app.delete("/categories/<int:category_id>")
@@ -70,4 +68,4 @@ def delete_category(category_id, user):
     db.session.delete(category)
     db.session.commit()
 
-    return make_response({})
+    return {}
