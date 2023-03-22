@@ -13,8 +13,8 @@ logger = ServiceLogger(__name__)
 @app.post("/register")
 @use_request_schema(UserSchema)
 def register(request_data):
-    email = request_data.get("email")
-    password = request_data.get("password")
+    email = request_data["email"]
+    password = request_data["password"]
 
     if UserModel.query_by_email(email):
         raise DuplicatedEmailError()
@@ -38,8 +38,8 @@ def register(request_data):
 @app.post("/login")
 @use_request_schema(UserSchema)
 def login(request_data):
-    email = request_data.get("email")
-    password = request_data.get("password")
+    email = request_data["email"]
+    password = request_data["password"]
 
     user = UserModel.query_by_email(email)
 

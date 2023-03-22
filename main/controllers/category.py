@@ -23,7 +23,7 @@ def create_category(user, request_data):
     if CategoryModel.query_by_name(request_data["name"]):
         raise DuplicatedCategoryNameError()
     # get() -> []
-    category = CategoryModel(name=request_data.get("name"), user_id=user.id)
+    category = CategoryModel(name=request_data["name"], user_id=user.id)
     db.session.add(category)
     db.session.commit()
 
@@ -41,7 +41,7 @@ def get_category_by_id(category_id):
 @require_token
 @use_request_schema(CategorySchema)
 def update_category(category_id, user, request_data):
-    name = request_data.get("name")
+    name = request_data["name"]
 
     category = CategoryModel.query.get_or_404(category_id)
     if category.user_id != user.id:

@@ -23,9 +23,8 @@ def get_all_items_by_category(category_id, request_data):
 @require_token
 @use_request_schema(ItemSchema)
 def create_item(category_id, user, request_data):
-    # TODO: get() -> []
     # TODO: add category id check
-    if ItemModel.query_by_name(request_data.get("name")):
+    if ItemModel.query_by_name(request_data["name"]):
         raise DuplicatedItemNameError()
 
     item = ItemModel(**request_data, user_id=user.id, category_id=category_id)
