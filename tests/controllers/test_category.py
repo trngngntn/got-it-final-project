@@ -1,3 +1,4 @@
+from main import config
 from main.libs.jwt import verify_access_token
 from main.models.category import CategoryModel
 from main.models.item import ItemModel
@@ -11,9 +12,8 @@ def test_get_all_categories(client, create_categories, response_not_found):
 
     category_list = response.json["data"]
 
-    assert len(category_list) <= 20
-    # TODO: 20 -> PAGINATION_MAX_PAGES
-    assert response.json["items_per_page"] == 20
+    assert len(category_list) <= config.PAGINATION_MAX_ITEMS
+    assert response.json["items_per_page"] == config.PAGINATION_MAX_ITEMS
 
     total_category = len(create_categories)
     assert response.json["total_items"] == total_category
@@ -21,7 +21,7 @@ def test_get_all_categories(client, create_categories, response_not_found):
     # test with page > 1
     page = 1
 
-    while page * 20 < total_category:
+    while page * config.PAGINATION_MAX_ITEMS < total_category:
         page = page + 1
         response = client.get(f"/categories?page={page}")
         assert response.status_code == 200
@@ -48,7 +48,7 @@ def test_create_category(client, login_users):
 
     created = CategoryModel.query.filter(CategoryModel.name == "categoryx").first()
 
-    assert created  # is not None
+    assert created is not None
     assert created.user_id == verify_access_token(login_users[0])["sub"]
 
 

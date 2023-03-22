@@ -1,3 +1,4 @@
+from main import config
 from main.libs.jwt import verify_access_token
 from main.models.item import ItemModel
 
@@ -11,15 +12,15 @@ def test_get_all_items(client, create_categories, create_items, response_not_fou
 
     catergory_list = response.json["data"]
 
-    assert len(catergory_list) <= 20
-    assert response.json["items_per_page"] == 20
+    assert len(catergory_list) <= config.PAGINATION_MAX_ITEMS
+    assert response.json["items_per_page"] == config.PAGINATION_MAX_ITEMS
 
     total_item = response.json["total_items"]
 
     # test with page > 1
     page = 1
 
-    while page * 20 < total_item:
+    while page * config.PAGINATION_MAX_ITEMS < total_item:
         page = page + 1
         response = client.get(f"{path}?page={page}")
         assert response.status_code == 200
@@ -29,6 +30,7 @@ def test_get_all_items(client, create_categories, create_items, response_not_fou
 
     # test with page > max_page
     response = client.get(f"{path}?page={page + 1}")
+
     assert response.status_code == 404
     assert response.json == response_not_found
 
