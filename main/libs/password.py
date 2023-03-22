@@ -8,10 +8,15 @@ def generate_salt() -> str:
     return os.urandom(const.SALT_BYTE_LEN).hex()
 
 
-def hash_password(password: str, salt: str) -> str:
+def hash_password(password: str, salt: str):
     # check salt must be hex string
+    try:
+        salt_byte = bytes.fromhex(salt)
+    except ValueError:
+        raise ValueError("'salt' must be hex string")
+
     return pbkdf2_hmac(
-        const.HASH_ALGO, password.encode(), bytes.fromhex(salt), const.HASH_ITERS
+        const.HASH_ALGO, password.encode(), salt_byte, const.HASH_ITERS
     ).hex()
 
 
