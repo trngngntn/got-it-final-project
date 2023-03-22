@@ -9,7 +9,7 @@ from alembic.config import Config
 
 from main import app as _app
 from main import db
-from main.libs import passwordlib
+from main.libs import password as password_lib
 from main.models.category import CategoryModel
 from main.models.item import ItemModel
 from main.models.user import UserModel
@@ -70,11 +70,11 @@ def client(app, session):
 def create_users():
     users = []
     for i in range(0, 10):
-        salt = passwordlib.generate_salt()
+        salt = password_lib.generate_salt()
         user = UserModel(
             email=f"user{i}@gmail.com",
             salt=salt,
-            password=passwordlib.hash("Abc123", salt),
+            password=password_lib.hash_password("Abc123", salt),
         )
         db.session.add(user)
         users.append(user)

@@ -43,7 +43,7 @@ def use_request_schema(schema):
                 data = request.get_json()
             else:
                 data = request.args
-            data = schema.load(data)
+            data = schema().load(data)
             return func(*args, **kwargs, request_data=data)
 
         return load_data

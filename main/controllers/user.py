@@ -3,7 +3,8 @@ from flask import make_response
 from main import app, db
 from main.commons.decorators import use_request_schema
 from main.commons.exceptions import DuplicatedEmailError, Unauthorized
-from main.libs import jwt, passwordlib
+from main.libs import jwt
+from main.libs import password as password_lib
 from main.libs.log import ServiceLogger
 from main.models.user import UserModel
 from main.schemas.user import UserSchema
@@ -20,11 +21,11 @@ def register(request_data):
     if UserModel.query_by_email(email):
         raise DuplicatedEmailError()
 
-    salt = passwordlib.generate_salt()
+    salt = password_lib.generate_salt()
     user = UserModel(
         email=email,
         salt=salt,
-        password=passwordlib.hash(password, salt),
+        password=password_lib.hash_password(password, salt),
     )
 
     db.session.add(user)
@@ -44,7 +45,7 @@ def login(request_data):
 
     user = UserModel.query_by_email(email)
 
-    if user and passwordlib.verify_password(password, user.password, user.salt):
+    if user and password_lib.verify_password(password, user.password, user.salt):
         logger.info(message=f"User(id={user.id}) logged in.")
         token = jwt.create_access_token(user)
         return make_response({"access_token": token})
