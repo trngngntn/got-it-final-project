@@ -139,3 +139,7 @@ class DuplicatedCategoryNameError(ConflictError):
 class DuplicatedItemNameError(ConflictError):
     error_message = _ErrorMessage.DUPLICATED_ITEM_NAME
     error_code = _ErrorCode.DUPLICATED_ITEM_NAME
+
+
+class InvalidJWTError(Exception):
+    pass

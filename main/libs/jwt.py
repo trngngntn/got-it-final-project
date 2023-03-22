@@ -5,6 +5,7 @@ from jwt.exceptions import InvalidTokenError
 
 from main import config
 from main.commons import const
+from main.commons.exceptions import InvalidJWTError
 from main.libs.log import ServiceLogger
 from main.models.user import UserModel
 
@@ -23,13 +24,16 @@ def create_access_token(user: UserModel) -> str:
 
 
 def verify_access_token(token: str) -> dict:
-    payload = jwt.decode(token, config.JWT_SECRET_KEY, algorithms=[const.JWT_ALGO])
-    logger.info(message=f"jwt_payload={payload}")
+    try:
+        payload = jwt.decode(token, config.JWT_SECRET_KEY, algorithms=[const.JWT_ALGO])
+    except InvalidTokenError:
+        raise InvalidJWTError()
+
     return payload
 
 
 def extract_jwt_from_header(header: str) -> str:
     if header.startswith("Bearer "):
         return header.split(" ")[1]
-    # handle defined error
-    raise InvalidTokenError()
+
+    raise InvalidJWTError()

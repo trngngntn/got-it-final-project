@@ -1,10 +1,9 @@
 from functools import wraps
 
 from flask import request
-from jwt.exceptions import InvalidTokenError
 
 from main import db
-from main.commons.exceptions import Unauthorized
+from main.commons.exceptions import InvalidJWTError, Unauthorized
 from main.libs.jwt import extract_jwt_from_header, verify_access_token
 from main.libs.log import ServiceLogger
 from main.models.item import ItemModel
@@ -19,15 +18,18 @@ def require_token(func):
         auth_header = request.headers.get("Authorization")
         if not auth_header:
             raise Unauthorized()
+
         try:
             jwt_str = extract_jwt_from_header(auth_header)
             jwt_payload = verify_access_token(jwt_str)
+
             user = db.session.get(UserModel, jwt_payload["sub"])
             if user is None:
                 raise Unauthorized()
+
             return func(*args, **kwargs, user=user)
-        except InvalidTokenError:
-            logger.warning(message="Invalid token.")
+
+        except InvalidJWTError:
             raise Unauthorized()
 
     return wrapped_func

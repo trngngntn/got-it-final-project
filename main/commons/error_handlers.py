@@ -1,6 +1,5 @@
 import json
 
-import jwt
 from marshmallow import exceptions as marshmallow_exceptions
 from werkzeug import exceptions
 
@@ -29,7 +28,6 @@ def register_error_handlers(app):
         logger.warning(message=e)
         return BadRequest().to_response()
 
-    @app.errorhandler(jwt.exceptions.InvalidTokenError)
     @app.errorhandler(401)
     def unauthorized(_):
         return Unauthorized().to_response()
