@@ -54,7 +54,6 @@ with app.app_context():
         import random
         import sys
 
-        from main import db, refresh_db
         from main.libs import passwordlib
         from main.models.category import CategoryModel
         from main.models.item import ItemModel
