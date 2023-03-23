@@ -9,7 +9,6 @@ def generate_salt() -> str:
 
 
 def hash_password(password: str, salt: str):
-    # check salt must be hex string
     try:
         salt_byte = bytes.fromhex(salt)
     except ValueError:

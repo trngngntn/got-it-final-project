@@ -1,4 +1,5 @@
 import pytest
+from marshmallow import ValidationError
 
 from main.schemas.item import ItemSchema, ItemUpdateSchema
 
@@ -16,7 +17,7 @@ def test_load_schema_with_long_name():
     input_data = {
         "name": "123456789012345678901234567890123456789012345678901234567890",
     }
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         ItemSchema().load(input_data)
 
 
@@ -24,12 +25,12 @@ def test_load_schema_with_missing_fields():
     input_data = {
         "name": "abc",
     }
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         ItemSchema().load(input_data)
     input_data = {
         "description": "abc",
     }
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         ItemSchema().load(input_data)
 
 
@@ -44,5 +45,5 @@ def test_load_update_schema():
 
 def test_load_update_schema_with_all_fields_missing():
     input_data = {}
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         ItemUpdateSchema().load(input_data)

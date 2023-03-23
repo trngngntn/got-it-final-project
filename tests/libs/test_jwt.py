@@ -1,5 +1,6 @@
 import pytest
 
+from main.commons.exceptions import InvalidJWTError
 from main.libs import jwt
 
 # this token is expired
@@ -17,10 +18,10 @@ def test_extract_token_from_header():
 
 
 def test_verify_invalid_token():
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidJWTError):
         jwt.verify_access_token(token)
 
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidJWTError):
         jwt.verify_access_token("123456")
 
 

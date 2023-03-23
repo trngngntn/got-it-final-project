@@ -22,7 +22,6 @@ def get_all_categories(request_data):
 def create_category(user, request_data):
     if CategoryModel.query_by_name(request_data["name"]):
         raise DuplicatedCategoryNameError()
-    # get() -> []
     category = CategoryModel(name=request_data["name"], user_id=user.id)
     db.session.add(category)
     db.session.commit()
