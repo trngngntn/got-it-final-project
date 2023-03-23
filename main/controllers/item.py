@@ -1,6 +1,12 @@
+from sqlalchemy.exc import IntegrityError
+
 from main import app, config, db
 from main.commons.decorators import get_item, require_token, use_request_schema
-from main.commons.exceptions import DuplicatedItemNameError, Forbidden
+from main.commons.exceptions import (
+    DuplicatedItemNameError,
+    Forbidden,
+    is_duplicated_entry_error,
+)
 from main.models.category import CategoryModel
 from main.models.item import ItemModel
 from main.schemas.base import ParamPageSchema
@@ -29,8 +35,15 @@ def create_item(category_id, user, request_data):
         raise DuplicatedItemNameError()
 
     item = ItemModel(**request_data, user_id=user.id, category_id=category_id)
-    db.session.add(item)
-    db.session.commit()
+
+    try:
+        db.session.add(item)
+        db.session.commit()
+    except IntegrityError as e:
+        if is_duplicated_entry_error(e):
+            raise DuplicatedItemNameError()
+        else:
+            raise e
 
     return {}, 201
 
@@ -50,16 +63,18 @@ def update_item(item, user, request_data, **_):
         raise Forbidden()
 
     if request_data.get("name"):
-        item_with_same_name = ItemModel.query_by_name(request_data["name"])
-        if item_with_same_name and item_with_same_name.id != item.id:
-            raise DuplicatedItemNameError()
-
         item.name = request_data["name"]
 
     if request_data.get("description"):
         item.description = request_data["description"]
 
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError as e:
+        if is_duplicated_entry_error(e):
+            raise DuplicatedItemNameError()
+        else:
+            raise e
 
     return {}
 

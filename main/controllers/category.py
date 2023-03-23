@@ -1,6 +1,12 @@
+from sqlalchemy.exc import IntegrityError
+
 from main import app, config, db
 from main.commons.decorators import require_token, use_request_schema
-from main.commons.exceptions import DuplicatedCategoryNameError, Forbidden
+from main.commons.exceptions import (
+    DuplicatedCategoryNameError,
+    Forbidden,
+    is_duplicated_entry_error,
+)
 from main.models.category import CategoryModel
 from main.schemas.base import ParamPageSchema
 from main.schemas.category import CategoryListSchema, CategorySchema
@@ -20,12 +26,15 @@ def get_all_categories(request_data):
 @require_token
 @use_request_schema(CategorySchema)
 def create_category(user, request_data):
-    if CategoryModel.query_by_name(request_data["name"]):
-        raise DuplicatedCategoryNameError()
     category = CategoryModel(name=request_data["name"], user_id=user.id)
-    db.session.add(category)
-    db.session.commit()
-
+    try:
+        db.session.add(category)
+        db.session.commit()
+    except IntegrityError as e:
+        if is_duplicated_entry_error(e):
+            raise DuplicatedCategoryNameError()
+        else:
+            raise e
     return {}, 201
 
 
@@ -46,12 +55,15 @@ def update_category(category_id, user, request_data):
     if category.user_id != user.id:
         raise Forbidden()
 
-    category_with_same_name = CategoryModel.query_by_name(name)
-    if category_with_same_name and category_with_same_name.id != category_id:
-        raise DuplicatedCategoryNameError()
-    # catch database exception for name duplicate
     category.name = name
-    db.session.commit()
+
+    try:
+        db.session.commit()
+    except IntegrityError as e:
+        if is_duplicated_entry_error(e):
+            raise DuplicatedCategoryNameError()
+        else:
+            raise e
 
     return {}
 

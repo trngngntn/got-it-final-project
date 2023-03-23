@@ -1,6 +1,7 @@
 from typing import Optional
 
 from flask import make_response
+from sqlalchemy.exc import IntegrityError
 
 from main.schemas.exceptions import ErrorSchema
 
@@ -149,3 +150,7 @@ class DuplicatedItemNameError(ConflictError):
 
 class InvalidJWTError(Exception):
     pass
+
+
+def is_duplicated_entry_error(e: IntegrityError):
+    return "Duplicate entry" in str(e.orig)
