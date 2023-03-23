@@ -18,11 +18,3 @@ class ItemModel(db.Model):
     category = db.relationship("CategoryModel", back_populates="items")
     created = db.Column(db.DateTime(), default=datetime.now)
     modified = db.Column(db.DateTime(), default=datetime.now, onupdate=datetime.now)
-
-    @classmethod
-    def query_by_name(cls, name: str):
-        return cls.query.filter(cls.name == name).first()
-
-    @classmethod
-    def query_by_ids(cls, category_id, item_id):
-        return cls.query.filter(cls.category_id == category_id, cls.item_id == item_id)

@@ -16,7 +16,3 @@ class CategoryModel(db.Model):
     )
     created = db.Column(db.DateTime(), default=datetime.now)
     modified = db.Column(db.DateTime(), default=datetime.now, onupdate=datetime.now)
-
-    @classmethod
-    def query_by_name(cls, name: str):
-        return cls.query.filter(cls.name == name).first()

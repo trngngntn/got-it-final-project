@@ -31,9 +31,6 @@ def get_all_items_by_category(category_id, request_data):
 def create_item(category_id, user, request_data):
     CategoryModel.query.get_or_404(category_id)
 
-    if ItemModel.query_by_name(request_data["name"]):
-        raise DuplicatedItemNameError()
-
     item = ItemModel(**request_data, user_id=user.id, category_id=category_id)
 
     try:

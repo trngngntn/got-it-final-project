@@ -1,5 +1,7 @@
 import re
 
+import pytest
+
 from main.commons import const
 from main.libs import password as password_lib
 
@@ -19,3 +21,7 @@ def test_password_hash():
     assert hashed_password != password
     assert re.match(PATTERN_HASH, hashed_password)
     assert password_lib.verify_password(password, hashed_password, salt)
+
+    salt = "1234567890qwerty"
+    with pytest.raises(ValueError):
+        password_lib.hash_password(password, salt)
